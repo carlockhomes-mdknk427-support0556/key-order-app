@@ -362,7 +362,7 @@ export default function App() {
   const [showForm, setShowForm] = useState(false)
   const [editingOrder, setEditingOrder] = useState(null)
   const [showGAS, setShowGAS] = useState(false)
-  const [gasUrl, setGasUrl] = useState(() => localStorage.getItem(GAS_CONFIG_KEY) || '')
+  const [gasUrl, setGasUrl] = useState(() => localStorage.getItem(GAS_CONFIG_KEY) || 'https://script.google.com/macros/s/AKfycby-uBwfzBDk_N5l-tQcq_tb_8ibbT5TczYW7WXqTbQDiu7QmTOeNwxf3-bgYlUYcOo/exec')
   const [syncing, setSyncing] = useState(false)
   const [lastSync, setLastSync] = useState(null)
   const [search, setSearch] = useState('')
