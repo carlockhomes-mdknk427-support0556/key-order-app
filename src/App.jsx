@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Key, Plus, X, ChevronRight, Phone, Building2, FileText, JapaneseYen, ArrowRight, Loader2, RefreshCw, Settings, Search, AlertTriangle, ChevronDown } from 'lucide-react'
+import { Key, Plus, X, ChevronRight, Phone, Building2, FileText, JapaneseYen, ArrowRight, Loader2, RefreshCw, Settings, Search, AlertTriangle } from 'lucide-react'
 import './App.css'
 
 const STATUSES = [
@@ -26,18 +26,60 @@ const ALERTS = [
   { id: 'alert_arrived',  status: 'arrived',  days: 7,  label: '入荷後１週間経過',   color: '#e74c3c', borderColor: '#e74c3c' },
 ]
 
-// 商品マスター
-const PRODUCTS = [
-  { name: 'TLRS2-K01D',       price: 10050 },
-  { name: 'TLRS2-E01',        price: 15500 },
-  { name: 'TLNT-K(T)02A',     price: 3550  },
-  { name: 'TLNT-K03 (4)A',    price: 4200  },
-  { name: 'FKLカード',         price: 3550  },
-  { name: '標準キー',           price: 2000  },
-  { name: '出作業費',           price: 12000 },
-  { name: '事務手数料',         price: 1100  },
-  { name: '美和S手数料',        price: 2200  },
+// ============================================================
+// メーカー・商品マスター
+// ============================================================
+const MAKERS = [
+  { id: 'miwa',    label: '美和ロック', taxIncluded: false },
+  { id: 'shibutani', label: 'シブタニ', taxIncluded: true  },
+  { id: 'goal',    label: 'ゴール',    taxIncluded: false },
 ]
+
+const MAKER_PRODUCTS = {
+  miwa: [
+    { group: '商品', items: [
+      { name: 'TLRS2-K01D',    price: 10050 },
+      { name: 'TLRS2-E01',     price: 15500 },
+      { name: 'TLNT-K(T)02A',  price: 3550  },
+      { name: 'TLNT-K03 (4)A', price: 4200  },
+      { name: 'FKLカード',      price: 3550  },
+      { name: '標準キー',        price: 2000  },
+    ]},
+    { group: '作業費・手数料', items: [
+      { name: '出作業費',    price: 12000 },
+      { name: '事務手数料',  price: 1100  },
+      { name: '美和S手数料', price: 2200  },
+    ]},
+  ],
+  shibutani: [
+    { group: '🔑 カギ類', items: [
+      { name: 'Tebraキー',             price: 15400 },
+      { name: 'Tebra収納キー（新旧あり）', price: 6600  },
+      { name: 'F22 TLキー',            price: 7100  },
+      { name: 'TFキー',                price: 7800  },
+      { name: 'FTSキー',               price: 13200 },
+      { name: 'F22 標準キー',           price: 3900  },
+      { name: 'T20 標準キー',           price: 3900  },
+    ]},
+    { group: '🏷️ タグ類', items: [
+      { name: 'Tebraタグ', price: 11500 },
+      { name: 'TLタグ',    price: 3200  },
+    ]},
+    { group: '💳 カード類', items: [
+      { name: 'TLカード', price: 3200 },
+      { name: 'TFカード', price: 3900 },
+    ]},
+    { group: '🔧 作業費・手数料類', items: [
+      { name: '出張費',                  price: 8000  },
+      { name: '交換作業費（シリンダー）',   price: 8000  },
+      { name: '交換作業費（収納キー）',     price: 5000  },
+      { name: '登録作業費',               price: 5000  },
+      { name: 'メーカー手数料',            price: 2500  },
+      { name: '送料・事務手数料（弊社）',   price: 1210  },
+    ]},
+  ],
+  goal: [],
+}
 
 function getAlertInfo(order) {
   const alert = ALERTS.find(a => a.status === order.status)
@@ -51,12 +93,13 @@ const EMPTY_FORM = {
   name: '', mansion: '', room: '', phone: '', work: '',
   isInquiry: false,
   keyNumber: '', clientName: '', clientPhone: '', clientAddress: '',
-  items: [],       // [{ name, price, qty }]
-  priceOverride: '', // @xxxxx 形式の場合
+  maker: '',
+  items: [],
+  priceOverride: '',
 }
 
-const now = new Date()
-const daysAgo = (d) => new Date(now - d * 24 * 60 * 60 * 1000).toISOString()
+const now2 = new Date()
+const daysAgo = (d) => new Date(now2 - d * 24 * 60 * 60 * 1000).toISOString()
 
 const SAMPLE_DATA = [
   { id: '1', status: 'order',    name: '田中 太郎', mansion: 'サンシャイン赤坂', room: '302', phone: '090-1234-5678', work: 'ディンプルキー複製 × 2', amount: '8800', createdAt: daysAgo(8) },
@@ -94,23 +137,22 @@ async function fetchFromGAS(gasUrl) {
   } catch { return null }
 }
 
-// ============================================================
-// 金額計算ロジック
-// ============================================================
-function calcAmounts(items, priceOverride) {
-  // @入力の場合はそのまま
+// 金額計算
+function calcAmounts(items, priceOverride, taxIncluded) {
   if (priceOverride && priceOverride.startsWith('@')) {
     const val = Number(priceOverride.slice(1).replace(/,/g, ''))
     return { subtotal: val, tax: 0, total: val, isOverride: true }
   }
-  // 商品合計
   const itemTotal = items.reduce((sum, it) => sum + (it.price * (it.qty || 1)), 0)
-  // 手動上書きがある場合
   const manualSubtotal = priceOverride !== '' ? Number(priceOverride.replace(/,/g, '')) : itemTotal
   const subtotal = isNaN(manualSubtotal) ? itemTotal : manualSubtotal
+  if (taxIncluded) {
+    // シブタニ：税込み計算スルー（そのまま表示）
+    return { subtotal, tax: null, total: subtotal, isOverride: false, taxIncluded: true }
+  }
   const tax = Math.floor(subtotal * 0.1)
   const total = subtotal + tax
-  return { subtotal, tax, total, isOverride: false }
+  return { subtotal, tax, total, isOverride: false, taxIncluded: false }
 }
 
 // ============================================================
@@ -146,7 +188,6 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit }) {
   const st = STATUSES.find(s => s.id === order.status) || STATUSES[1]
   const transitions = STATUS_TRANSITIONS[order.status] || []
   const alertInfo = getAlertInfo(order)
-
   const cardStyle = { '--card-color': st.color, '--card-bg': st.bg }
   const borderStyle = alertInfo ? { border: `2px solid ${alertInfo.borderColor}`, boxShadow: `0 0 10px ${alertInfo.borderColor}40` } : {}
 
@@ -163,6 +204,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit }) {
           <div>
             <div className="order-name">
               {order.status === 'inquiry' && <span className="inquiry-tag">問合せ</span>}
+              {order.maker && <span className="maker-tag">{MAKERS.find(m=>m.id===order.maker)?.label || order.maker}</span>}
               {order.name}
             </div>
             <div className="order-sub">{order.mansion} {order.room ? order.room+'号室' : ''}</div>
@@ -215,13 +257,18 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit }) {
   )
 }
 
-// 商品選択コンポーネント
-function ItemSelector({ items, onChange }) {
-  const [selectedProduct, setSelectedProduct] = useState('')
+// 商品セレクター
+function ItemSelector({ maker, items, onChange }) {
+  const [selectedKey, setSelectedKey] = useState('')
+  const [customName, setCustomName] = useState('')
+  const [customPrice, setCustomPrice] = useState('')
 
-  function addItem() {
-    if (!selectedProduct) return
-    const product = PRODUCTS.find(p => p.name === selectedProduct)
+  const groups = MAKER_PRODUCTS[maker] || []
+  const allItems = groups.flatMap(g => g.items.map(i => ({ ...i, group: g.group })))
+
+  function addFromSelect() {
+    if (!selectedKey) return
+    const product = allItems.find(i => i.name === selectedKey)
     if (!product) return
     const existing = items.find(i => i.name === product.name)
     if (existing) {
@@ -229,7 +276,20 @@ function ItemSelector({ items, onChange }) {
     } else {
       onChange([...items, { name: product.name, price: product.price, qty: 1 }])
     }
-    setSelectedProduct('')
+    setSelectedKey('')
+  }
+
+  function addCustom() {
+    if (!customName.trim() || !customPrice) return
+    const price = Number(customPrice)
+    if (isNaN(price)) return
+    const existing = items.find(i => i.name === customName.trim())
+    if (existing) {
+      onChange(items.map(i => i.name === customName.trim() ? { ...i, qty: i.qty + 1 } : i))
+    } else {
+      onChange([...items, { name: customName.trim(), price, qty: 1 }])
+    }
+    setCustomName(''); setCustomPrice('')
   }
 
   function updateQty(name, qty) {
@@ -241,17 +301,47 @@ function ItemSelector({ items, onChange }) {
 
   return (
     <div className="item-selector">
-      <div className="item-add-row">
-        <select value={selectedProduct} onChange={e => setSelectedProduct(e.target.value)} className="product-select">
-          <option value="">商品を選択...</option>
-          {PRODUCTS.map(p => (
-            <option key={p.name} value={p.name}>{p.name}（¥{p.price.toLocaleString()}）</option>
-          ))}
-        </select>
-        <button type="button" className="btn-add-item" onClick={addItem} disabled={!selectedProduct}>
+      {/* プルダウン選択 */}
+      {groups.length > 0 && (
+        <div className="item-add-row">
+          <select value={selectedKey} onChange={e => setSelectedKey(e.target.value)} className="product-select">
+            <option value="">商品を選択...</option>
+            {groups.map(g => (
+              <optgroup key={g.group} label={g.group}>
+                {g.items.map(p => (
+                  <option key={p.name} value={p.name}>{p.name}（¥{p.price.toLocaleString()}）</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          <button type="button" className="btn-add-item" onClick={addFromSelect} disabled={!selectedKey}>
+            <Plus size={14} /> 追加
+          </button>
+        </div>
+      )}
+
+      {/* 手入力 */}
+      <div className="custom-item-row">
+        <input
+          className="custom-name-input"
+          placeholder="商品名を手入力..."
+          value={customName}
+          onChange={e => setCustomName(e.target.value)}
+        />
+        <input
+          className="custom-price-input"
+          placeholder="価格"
+          type="number"
+          min="0"
+          value={customPrice}
+          onChange={e => setCustomPrice(e.target.value)}
+        />
+        <button type="button" className="btn-add-item" onClick={addCustom} disabled={!customName.trim() || !customPrice}>
           <Plus size={14} /> 追加
         </button>
       </div>
+
+      {/* 選択済み商品リスト */}
       {items.length > 0 && (
         <div className="item-list">
           {items.map(item => (
@@ -274,28 +364,32 @@ function ItemSelector({ items, onChange }) {
 }
 
 function OrderForm({ initial, onSave, onCancel }) {
-  const initItems = initial?.items || []
-  const initOverride = initial?.priceOverride || ''
-
   const [form, setForm] = useState({
     ...(initial || EMPTY_FORM),
-    items: initItems,
-    priceOverride: initOverride,
+    items: initial?.items || [],
+    priceOverride: initial?.priceOverride || '',
+    maker: initial?.maker || '',
   })
   const [showExtra, setShowExtra] = useState(!!(initial?.keyNumber || initial?.clientName || initial?.clientPhone || initial?.clientAddress))
 
+  const makerObj = MAKERS.find(m => m.id === form.maker)
+  const taxIncluded = makerObj?.taxIncluded || false
+  const { subtotal, tax, total, isOverride, taxIncluded: isTaxIncluded } = calcAmounts(form.items, form.priceOverride, taxIncluded)
+
   function handle(e) {
     const val = e.target.type === 'checkbox' ? e.target.checked : e.target.value
+    // メーカー変更時は商品リストをリセット
+    if (e.target.name === 'maker') {
+      setForm(f => ({ ...f, maker: val, items: [], priceOverride: '' }))
+      return
+    }
     setForm(f => ({ ...f, [e.target.name]: val }))
   }
-
-  const { subtotal, tax, total, isOverride } = calcAmounts(form.items, form.priceOverride)
 
   function submit(e) {
     e.preventDefault()
     if (!form.name.trim()) return alert('氏名を入力してください')
-    const amount = String(total)
-    onSave({ ...form, amount })
+    onSave({ ...form, amount: String(total) })
   }
 
   return (
@@ -306,6 +400,8 @@ function OrderForm({ initial, onSave, onCancel }) {
           <button className="modal-close" onClick={onCancel}><X size={20} /></button>
         </div>
         <form onSubmit={submit} className="order-form">
+
+          {/* お問合せトグル */}
           <div className="inquiry-toggle">
             <label className="toggle-label">
               <input type="checkbox" name="isInquiry" checked={form.isInquiry || false} onChange={handle} />
@@ -314,6 +410,7 @@ function OrderForm({ initial, onSave, onCancel }) {
             <p className="toggle-note">チェックなしの場合は受注セクションで処理されます</p>
           </div>
 
+          {/* 基本情報 */}
           <label>氏名 <span className="req">*</span>
             <input name="name" value={form.name} onChange={handle} placeholder="田中 太郎" required />
           </label>
@@ -328,36 +425,64 @@ function OrderForm({ initial, onSave, onCancel }) {
           <label>電話番号
             <input name="phone" value={form.phone} onChange={handle} placeholder="090-0000-0000" type="tel" />
           </label>
-          <label>作業内容（注文商品）
-            <textarea name="work" value={form.work} onChange={handle} placeholder="ディンプルキー複製 × 2枚" rows={2} />
+          <label>作業内容
+            <textarea name="work" value={form.work} onChange={handle} placeholder="作業内容を入力..." rows={2} />
           </label>
 
-          {/* 商品選択 */}
-          <div className="form-section-title">合計金額</div>
-          <ItemSelector items={form.items} onChange={items => setForm(f => ({ ...f, items }))} />
+          {/* メーカー選択 */}
+          <div className="form-section-title">メーカー・商品選択</div>
+          <div className="maker-tabs">
+            {MAKERS.map(m => (
+              <button
+                key={m.id}
+                type="button"
+                className={`maker-tab ${form.maker === m.id ? 'active' : ''}`}
+                onClick={() => setForm(f => ({ ...f, maker: m.id, items: [], priceOverride: '' }))}
+              >
+                {m.label}
+                {m.taxIncluded && <span className="tax-badge">税込</span>}
+              </button>
+            ))}
+          </div>
 
-          {/* 税抜き・税込み表示 */}
+          {/* 商品選択 */}
+          {form.maker && (
+            <ItemSelector
+              maker={form.maker}
+              items={form.items}
+              onChange={items => setForm(f => ({ ...f, items }))}
+            />
+          )}
+          {!form.maker && (
+            <div className="maker-hint">↑ メーカーを選択すると商品を追加できます</div>
+          )}
+
+          {/* 金額サマリー */}
           <div className="price-summary">
+            {isTaxIncluded && (
+              <div className="tax-included-notice">💡 シブタニは税込み価格のため消費税計算をスキップします</div>
+            )}
             <div className="price-row">
               <label className="price-label">
-                税抜き合計（直接入力可・@で固定）
+                {isTaxIncluded ? '税込み合計（直接入力可・@で固定）' : '税抜き合計（直接入力可・@で固定）'}
                 <input
                   name="priceOverride"
                   value={form.priceOverride}
                   onChange={handle}
-                  placeholder={`¥${subtotal.toLocaleString()}（商品合計から自動計算）`}
+                  placeholder={`¥${subtotal.toLocaleString()}（自動計算）`}
                   className="price-input"
                 />
               </label>
               <label className="price-label">
-                税込み金額（自動計算）
+                {isTaxIncluded ? '請求金額（税込）' : '税込み金額（自動計算）'}
                 <div className="price-display" style={{ color: isOverride ? '#e67e22' : 'var(--accent)' }}>
                   ¥{total.toLocaleString()}
                   {isOverride && <span className="override-badge">固定</span>}
+                  {isTaxIncluded && !isOverride && <span className="override-badge" style={{background:'#3498db'}}>税込</span>}
                 </div>
               </label>
             </div>
-            {!isOverride && (
+            {!isOverride && !isTaxIncluded && subtotal > 0 && (
               <div className="tax-detail">
                 税抜き ¥{subtotal.toLocaleString()} ＋ 消費税10% ¥{tax.toLocaleString()} ＝ 税込み ¥{total.toLocaleString()}
               </div>
@@ -402,14 +527,12 @@ function GASSettings({ gasUrl, onSave, onClose }) {
   const [url, setUrl] = useState(gasUrl || DEFAULT_GAS_URL)
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
-
   async function test() {
     setLoading(true); setStatus('')
     try { await fetch(url + '?action=get'); setStatus('success') }
     catch { setStatus('error') }
     finally { setLoading(false) }
   }
-
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{maxWidth:540}}>
@@ -429,7 +552,7 @@ function GASSettings({ gasUrl, onSave, onClose }) {
             <button className="btn-save" style={{flex:1}} onClick={()=>onSave(url)}>保存</button>
           </div>
           {status === 'success' && <p style={{color:'#27ae60',fontSize:13}}>✓ 接続成功</p>}
-          {status === 'error' && <p style={{color:'#e74c3c',fontSize:13}}>✗ 接続失敗。URLを確認してください</p>}
+          {status === 'error' && <p style={{color:'#e74c3c',fontSize:13}}>✗ 接続失敗</p>}
         </div>
       </div>
     </div>
@@ -516,7 +639,6 @@ export default function App() {
 
   const alertCounts = {}
   ALERTS.forEach(a => { alertCounts[a.id] = orders.filter(o => getAlertInfo(o)?.id === a.id).length })
-
   const counts = {}
   STATUSES.forEach(s => { counts[s.id] = orders.filter(o => o.status === s.id).length })
 
@@ -549,10 +671,7 @@ export default function App() {
           <div className="new-order-wrap">
             <button className="btn-primary btn-primary-lg" onClick={() => setShowForm(true)}><Plus size={18} /> 新規受注</button>
             <div className="sync-info-below">
-              {lastSync
-                ? <>最終同期: {formatDate(lastSync.toISOString())}</>
-                : <span style={{color:'#e67e22'}}>未同期</span>
-              }
+              {lastSync ? <>最終同期: {formatDate(lastSync.toISOString())}</> : <span style={{color:'#e67e22'}}>未同期</span>}
             </div>
           </div>
         </div>
