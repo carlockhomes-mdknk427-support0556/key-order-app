@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Key, Plus, X, ChevronRight, Phone, Building2, FileText, JapaneseYen, ArrowRight, Loader2, RefreshCw, Settings, Search, AlertTriangle } from 'lucide-react'
 import './App.css'
+import Loading from './Loading'
 
 const STATUSES = [
   { id: 'inquiry',  label: 'お問合せ',    color: '#e67e22', bg: 'rgba(230,126,34,0.12)',  icon: '💬' },
@@ -576,18 +577,36 @@ export default function App() {
   const [syncing, setSyncing] = useState(false)
   const [lastSync, setLastSync] = useState(null)
   const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const loadingDoneRef = useRef(false)
+  const loadStartRef = useRef(Date.now())
 
   useEffect(() => { localStorage.setItem('key_orders', JSON.stringify(orders)) }, [orders])
 
   useEffect(() => {
-    if (!gasUrl) return
-    const doFetch = () => {
+    // 初回ローディング制御：GAS取得 + 最低3秒表示
+    const startTime = Date.now()
+    const finishLoading = () => {
+      const elapsed = Date.now() - startTime
+      const remain = Math.max(0, 3000 - elapsed)
+      setTimeout(() => setLoading(false), remain)
+    }
+
+    if (!gasUrl) {
+      finishLoading()
+      return
+    }
+
+    fetchFromGAS(gasUrl).then(remote => {
+      if (remote && remote.length > 0) { setOrders(remote); setLastSync(new Date()) }
+      finishLoading()
+    }).catch(() => finishLoading())
+
+    const timer = setInterval(() => {
       fetchFromGAS(gasUrl).then(remote => {
         if (remote && remote.length > 0) { setOrders(remote); setLastSync(new Date()) }
       })
-    }
-    doFetch()
-    const timer = setInterval(doFetch, 60000)
+    }, 60000)
     return () => clearInterval(timer)
   }, [gasUrl])
 
@@ -656,7 +675,9 @@ export default function App() {
   const totalAlerts = ALERTS.reduce((sum, a) => sum + alertCounts[a.id], 0)
 
   return (
-    <div className="app">
+    <>
+      {loading && <Loading />}
+      <div className="app">
       <header className="header">
         <div className="header-left">
           <Key size={22} color="var(--accent)" />
@@ -721,5 +742,6 @@ export default function App() {
       {editingOrder && <OrderForm initial={editingOrder} onSave={updateOrder} onCancel={() => setEditingOrder(null)} />}
       {showGAS && <GASSettings gasUrl={gasUrl} onSave={saveGasUrl} onClose={() => setShowGAS(false)} />}
     </div>
+    </>
   )
 }
