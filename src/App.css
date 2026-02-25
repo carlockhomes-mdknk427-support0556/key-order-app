@@ -1116,6 +1116,7 @@
 
 .custom-name-input {
   flex: 1;
+  min-width: 0;
   background: var(--surface2);
   border: 1px dashed var(--border);
   border-radius: 8px;
@@ -1127,7 +1128,8 @@
 .custom-name-input:focus { border-color: var(--accent2); border-style: solid; }
 
 .custom-price-input {
-  width: 90px;
+  flex: 1;
+  min-width: 0;
   background: var(--surface2);
   border: 1px dashed var(--border);
   border-radius: 8px;
