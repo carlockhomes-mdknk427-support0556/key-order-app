@@ -305,7 +305,7 @@ function ItemSelector({ maker, items, onChange }) {
       {/* プルダウン選択 */}
       {groups.length > 0 && (
         <div className="item-add-row">
-          <select value={selectedKey} onChange={e => setSelectedKey(e.target.value)} className="product-select">
+          <select name="product-select" id="product-select" value={selectedKey} onChange={e => setSelectedKey(e.target.value)} className="product-select">
             <option value="">商品を選択...</option>
             {groups.map(g => (
               <optgroup key={g.group} label={g.group}>
@@ -324,18 +324,24 @@ function ItemSelector({ maker, items, onChange }) {
       {/* 手入力 */}
       <div className="custom-item-row">
         <input
+          name="custom-name"
+          id="custom-name"
           className="custom-name-input"
           placeholder="商品名を手入力..."
           value={customName}
           onChange={e => setCustomName(e.target.value)}
+          autoComplete="off"
         />
         <input
+          name="custom-price"
+          id="custom-price"
           className="custom-price-input"
           placeholder="価格"
           type="number"
           min="0"
           value={customPrice}
           onChange={e => setCustomPrice(e.target.value)}
+          autoComplete="off"
         />
         <button type="button" className="btn-add-item" onClick={addCustom} disabled={!customName.trim() || !customPrice}>
           <Plus size={14} /> 追加
@@ -544,7 +550,7 @@ function GASSettings({ gasUrl, onSave, onClose }) {
         <div style={{padding:'20px 24px 24px'}}>
           <label style={{display:'block',marginBottom:12}}>
             <span style={{fontSize:12,color:'var(--text-dim)',display:'block',marginBottom:6}}>GAS ウェブアプリURL</span>
-            <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://script.google.com/macros/s/..." style={{width:'100%'}} />
+            <input name="gas-url" id="gas-url" value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://script.google.com/macros/s/..." style={{width:'100%'}} autoComplete="off" />
           </label>
           <div style={{display:'flex',gap:8,marginBottom:16}}>
             <button className="btn-cancel" style={{flex:1}} onClick={test} disabled={loading}>
@@ -713,7 +719,7 @@ export default function App() {
       <div className="list-toolbar">
         <div className="search-wrap">
           <Search size={14} color="var(--text-dim)" />
-          <input className="search-input" placeholder="氏名・マンション・電話番号で検索..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input name="search" id="search" className="search-input" placeholder="氏名・マンション・電話番号で検索..." value={search} onChange={e => setSearch(e.target.value)} autoComplete="off" />
           {search && <button onClick={() => setSearch('')} style={{background:'none',border:'none',color:'var(--text-dim)',cursor:'pointer'}}><X size={14}/></button>}
         </div>
         {(activeStatus || activeAlert) && (
