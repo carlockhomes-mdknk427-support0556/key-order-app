@@ -1457,3 +1457,63 @@
     margin-bottom: 0;
   }
 }
+/* 商品プレビュー（折りたたみ時） */
+.order-items-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.preview-chip {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.preview-chip-more {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* 商品明細（展開時） */
+.detail-row-items { align-items: flex-start !important; }
+.items-detail { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.items-detail-title {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.items-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 2px 0;
+}
+.items-detail-name { flex: 1; color: var(--text); }
+.items-detail-qty { color: var(--text-dim); font-size: 11px; min-width: 24px; }
+.items-detail-price {
+  color: var(--accent);
+  font-weight: 600;
+  min-width: 80px;
+  text-align: right;
+  font-family: 'Space Mono', monospace;
+}
+.items-detail-total {
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 4px;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: right;
+}
+.items-detail-total strong {
+  color: var(--accent);
+  font-fami
