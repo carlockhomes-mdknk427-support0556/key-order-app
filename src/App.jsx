@@ -395,6 +395,15 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit }) {
 }
 
 // 商品セレクター
+function isStandardKey(name) {
+  return name === '標準キー' || name === 'F22 標準キー' || name === 'T20 標準キー'
+}
+
+function shouldShowKeyNumber(maker, items) {
+  if (maker !== 'miwa' && maker !== 'goal') return false
+  return items.some(it => isStandardKey(it.name))
+}
+
 function ItemSelector({ maker, items, onChange }) {
   const [selectedKey, setSelectedKey] = useState('')
   const [customName, setCustomName]   = useState('')
@@ -471,8 +480,9 @@ function ItemSelector({ maker, items, onChange }) {
 function OrderForm({ initial, onSave, onCancel }) {
   const [form, setForm]       = useState({ ...(initial || EMPTY_FORM), items: initial?.items || [], priceOverride: initial?.priceOverride || '', maker: initial?.maker || '' })
   const [showExtra, setShowExtra] = useState(!!(initial?.keyNumber || initial?.clientName || initial?.clientPhone || initial?.clientAddress))
-  const makerObj   = MAKERS.find(m => m.id === form.maker)
-  const taxIncluded = makerObj?.taxIncluded || false
+  const makerObj      = MAKERS.find(m => m.id === form.maker)
+  const taxIncluded   = makerObj?.taxIncluded || false
+  const showKeyNumber = shouldShowKeyNumber(form.maker, form.items)
   const { subtotal, tax, total, isOverride, taxIncluded: isTaxIncluded } = calcAmounts(form.items, form.priceOverride, taxIncluded)
 
   function handle(e) {
@@ -522,6 +532,24 @@ function OrderForm({ initial, onSave, onCancel }) {
             ))}
           </div>
           {form.maker ? <ItemSelector maker={form.maker} items={form.items} onChange={items => setForm(f => ({ ...f, items }))} /> : <div className="maker-hint">↑ メーカーを選択すると商品を追加できます</div>}
+          {/* キーナンバー入力（標準キー選択時のみ） */}
+          {showKeyNumber && (
+            <div className="keynumber-section">
+              <label className="keynumber-label">
+                🔑 キーナンバー <span className="req">*</span>
+                <input
+                  name="keyNumber"
+                  value={form.keyNumber}
+                  onChange={handle}
+                  placeholder="例: KY-1234"
+                  className="keynumber-input"
+                  autoComplete="off"
+                />
+              </label>
+              <p className="keynumber-hint">標準キーの複製に必要なキーナンバーを入力してください</p>
+            </div>
+          )}
+
           <div className="price-summary">
             {isTaxIncluded && <div className="tax-included-notice">💡 シブタニは税込み価格のため消費税計算をスキップします</div>}
             <div className="price-row">
@@ -547,7 +575,6 @@ function OrderForm({ initial, onSave, onCancel }) {
             </button>
             {showExtra && (
               <div className="extra-fields">
-                <label>キーナンバー<input name="keyNumber"     value={form.keyNumber}     onChange={handle} placeholder="例: KY-1234" /></label>
                 <label>ご依頼主様<input  name="clientName"    value={form.clientName}    onChange={handle} placeholder="管理会社名など" /></label>
                 <label>電話番号<input    name="clientPhone"   value={form.clientPhone}   onChange={handle} placeholder="03-0000-0000" /></label>
                 <label>ご住所<input      name="clientAddress" value={form.clientAddress} onChange={handle} placeholder="東京都○○区..." /></label>
