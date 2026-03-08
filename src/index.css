@@ -1,10 +1,10 @@
 :root {
   --bg: #0f0f13;
-  --surface: #18181f;
-  --surface2: #22222c;
-  --border: #2e2e3a;
-  --text: #f0f0f5;
-  --text-dim: #8888a0;
+  --surface: #1c1c25;
+  --surface2: #25252f;
+  --border: #35354a;
+  --text: #f4f4f8;
+  --text-dim: #a0a0b8;
   --accent: #e8c547;
   --accent2: #4a9eff;
 
@@ -21,8 +21,11 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: 'Noto Sans JP', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 ::-webkit-scrollbar { width: 6px; }
