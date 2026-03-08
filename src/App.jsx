@@ -9,7 +9,7 @@ import Loading from './Loading'
 const STATUSES = [
   { id: 'inquiry',   label: 'お問合せ',      color: '#e67e22', bg: 'rgba(230,126,34,0.12)',  icon: '💬' },
   { id: 'guided',    label: '案内済み',      color: '#d4a017', bg: 'rgba(212,160,23,0.12)',  icon: '📋' },
-  { id: 'suginami',  label: '杉並本社受付',  color: '#1abc9c', bg: 'rgba(26,188,156,0.12)', icon: '🏢' },
+  { id: 'suginami',  label: '杉並電話受付',  color: '#1abc9c', bg: 'rgba(26,188,156,0.12)', icon: '🏢' },
   { id: 'order',     label: '受注',          color: '#ff6b35', bg: 'rgba(255,107,53,0.12)',  icon: '📥' },
   { id: 'arranged',  label: '手配済み',      color: '#9b59b6', bg: 'rgba(155,89,182,0.12)', icon: '🏭' },
   { id: 'arrived',   label: '入荷済み',      color: '#3498db', bg: 'rgba(52,152,219,0.12)', icon: '📦' },
@@ -1093,7 +1093,7 @@ export default function App() {
 
         <div className="status-grid">
           <div className="status-card-group">
-            {['inquiry','guided','suginami'].map(id => {
+            {['suginami','inquiry','guided'].map(id => {
               const s = STATUSES.find(x => x.id === id)
               return (
                 <button key={id} onClick={() => toggleStatus(id)} className="status-card status-card-sub" style={{ '--card-color': s.color, '--card-bg': s.bg, outline: activeStatus === id ? `2px solid ${s.color}` : 'none' }}>

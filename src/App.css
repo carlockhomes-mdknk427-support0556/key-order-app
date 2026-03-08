@@ -171,16 +171,16 @@
 }
 
 .status-card-icon-sm {
-  font-size: 18px;
+  font-size: 22px;
   line-height: 1;
   flex-shrink: 0;
 }
 
 .status-card-label-sm {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text-dim);
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   flex: 1;
   text-align: left;
 }
