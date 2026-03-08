@@ -952,14 +952,16 @@ export default function App() {
     if (!authed) { setLoading(false); return }
     const startTime = Date.now()
     const finishLoading = () => {
-      const remain = Math.max(0, 3000 - (Date.now() - startTime))
+      const remain = Math.max(0, 1500 - (Date.now() - startTime))
       setTimeout(() => setLoading(false), remain)
     }
-    if (!gasUrl) { finishLoading(); return }
+    // 最大5秒で強制終了
+    const safetyTimer = setTimeout(() => setLoading(false), 5000)
+    if (!gasUrl) { finishLoading(); clearTimeout(safetyTimer); return }
     fetchFromGAS(gasUrl).then(remote => {
       if (remote && remote.length > 0) { setOrders(remote); setLastSync(new Date()) }
-      finishLoading()
-    }).catch(finishLoading)
+      finishLoading(); clearTimeout(safetyTimer)
+    }).catch(() => { finishLoading(); clearTimeout(safetyTimer) })
     const timer = setInterval(() => {
       fetchFromGAS(gasUrl).then(remote => {
         if (remote && remote.length > 0) { setOrders(remote); setLastSync(new Date()) }
