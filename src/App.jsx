@@ -321,6 +321,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel }) {
               {order.name}
             </div>
             <div className="order-sub">{order.mansion} {order.room ? order.room+'号室' : ''}</div>
+            <div className="order-id-label">{order.id}</div>
             {order.items && order.items.length > 0 && (
               <div className="order-items-preview">
                 {order.items.slice(0,2).map(it => (

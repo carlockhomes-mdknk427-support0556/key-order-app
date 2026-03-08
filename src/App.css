@@ -1939,3 +1939,13 @@
 .status-card-split-half.bottom:hover { background: rgba(231,76,60,0.18); }
 .split-icon { font-size: 22px; }
 .split-label { font-size: 14px; font-weight: 700; white-space: nowrap; }
+
+/* 案件ID表示 */
+.order-id-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: 'Space Mono', monospace;
+  opacity: 0.6;
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+}
