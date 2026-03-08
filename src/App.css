@@ -139,10 +139,10 @@
 }
 
 .status-card-label {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text-dim);
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   text-align: center;
 }
 
@@ -1255,7 +1255,7 @@
     font-size: 20px;
   }
   .status-card-label {
-    font-size: 10px;
+    font-size: 12px;
   }
 
   /* アラートグリッド - 1列 */
@@ -1937,5 +1937,5 @@
   background: rgba(231,76,60,0.08);
 }
 .status-card-split-half.bottom:hover { background: rgba(231,76,60,0.18); }
-.split-icon { font-size: 16px; }
-.split-label { font-size: 12px; font-weight: 700; white-space: nowrap; }
+.split-icon { font-size: 22px; }
+.split-label { font-size: 14px; font-weight: 700; white-space: nowrap; }
