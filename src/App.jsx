@@ -972,10 +972,24 @@ export default function App() {
     return () => clearInterval(timer)
   }, [gasUrl, authed])
 
-  const syncGAS = useCallback(async (o) => {
+  const syncGAS = useCallback(async (localOrders) => {
     if (!gasUrl) return
     setSyncing(true)
-    await syncToGAS(gasUrl, o)
+    try {
+      const remote = await fetchFromGAS(gasUrl)
+      let merged = localOrders
+      if (remote && remote.length > 0) {
+        const localIds = new Set(localOrders.map(o => o.id))
+        const remoteOnly = remote.filter(o => !localIds.has(o.id))
+        if (remoteOnly.length > 0) {
+          merged = [...localOrders, ...remoteOnly]
+          setOrders(merged)
+        }
+      }
+      await syncToGAS(gasUrl, merged)
+    } catch {
+      await syncToGAS(gasUrl, localOrders)
+    }
     setLastSync(new Date())
     setSyncing(false)
   }, [gasUrl])
