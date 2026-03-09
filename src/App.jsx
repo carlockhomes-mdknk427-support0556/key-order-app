@@ -1015,11 +1015,35 @@ export default function App() {
     setShowSettings(false)
   }
 
-  function addOrder(form) {
+  async function addOrder(form) {
     const status = form.isSuginami ? 'suginami' : form.isGuided ? 'guided' : form.isInquiry ? 'inquiry' : 'order'
     const newOrder = { ...form, id: generateId(), status, createdAt: new Date().toISOString() }
     const next = [newOrder, ...orders]
-    setOrders(next); setShowForm(false); syncGAS(next)
+    setOrders(next); setShowForm(false)
+    // 注文フォームと同じ方式でWorkerに直接add_orderで送信
+    try {
+      await fetch(WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action:    'add_order',
+          id:        newOrder.id,
+          name:      newOrder.name || '',
+          mansion:   newOrder.mansion || '',
+          room:      newOrder.room || '',
+          phone:     newOrder.phone || '',
+          maker:     newOrder.maker || '',
+          items:     newOrder.items || [],
+          keyNumber: newOrder.keyNumber || '',
+          work:      newOrder.work || '',
+          note:      newOrder.work || '',
+          orderMode: 'new',
+          amount:    newOrder.amount || '',
+          status:    newOrder.status,
+          createdAt: newOrder.createdAt
+        })
+      })
+    } catch(e) { console.warn('add_order送信失敗:', e) }
   }
 
   function updateOrder(form) {
