@@ -155,11 +155,13 @@ async function callGAS(gasUrl, payload) {
   return await res.json()
 }
 
+const WORKER_URL = 'https://web.clh-0556-clh.workers.dev'
+
 async function syncToGAS(gasUrl, orders) {
   if (!gasUrl) return false
   try {
     const token = getToken()
-    await fetch(gasUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'sync', orders, token }) })
+    await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'sync', orders, token }) })
     return true
   } catch { return false }
 }
