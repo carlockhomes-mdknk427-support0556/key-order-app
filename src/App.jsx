@@ -155,7 +155,7 @@ async function callGAS(gasUrl, payload) {
   return await res.json()
 }
 
-const WORKER_URL = 'https://web.clh-0556-clh.workers.dev'
+const WORKER_URL = 'https://web-order.clh-0556-clh.workers.dev'
 
 async function syncToGAS(gasUrl, orders) {
   if (!gasUrl) return false
