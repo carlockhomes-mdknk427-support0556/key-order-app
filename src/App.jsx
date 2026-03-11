@@ -151,17 +151,18 @@ async function callGAS(gasUrl, payload) {
   const token = getToken()
   if (token) payload.token = token
   const params = new URLSearchParams({ data: JSON.stringify(payload) })
-  const res = await fetch(gasUrl + '?' + params.toString())
+  const res = await fetch(gasUrl + '?' + params.toString(), {
+    redirect: 'follow',
+    credentials: 'omit',
+  })
   return await res.json()
 }
-
-const WORKER_URL = 'https://web-order.clh-0556-clh.workers.dev'
 
 async function syncToGAS(gasUrl, orders) {
   if (!gasUrl) return false
   try {
     const token = getToken()
-    await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'sync', orders, token }) })
+    await fetch(gasUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'sync', orders, token }) })
     return true
   } catch { return false }
 }
@@ -169,7 +170,10 @@ async function syncToGAS(gasUrl, orders) {
 async function fetchFromGAS(gasUrl) {
   if (!gasUrl) return null
   try {
-    const res = await fetch(gasUrl + '?action=get')
+    const res = await fetch(gasUrl + '?action=get', {
+      redirect: 'follow',
+      credentials: 'omit',
+    })
     const data = await res.json()
     return data.orders || null
   } catch { return null }
@@ -972,24 +976,10 @@ export default function App() {
     return () => clearInterval(timer)
   }, [gasUrl, authed])
 
-  const syncGAS = useCallback(async (localOrders) => {
+  const syncGAS = useCallback(async (o) => {
     if (!gasUrl) return
     setSyncing(true)
-    try {
-      const remote = await fetchFromGAS(gasUrl)
-      let merged = localOrders
-      if (remote && remote.length > 0) {
-        const localIds = new Set(localOrders.map(o => o.id))
-        const remoteOnly = remote.filter(o => !localIds.has(o.id))
-        if (remoteOnly.length > 0) {
-          merged = [...localOrders, ...remoteOnly]
-          setOrders(merged)
-        }
-      }
-      await syncToGAS(gasUrl, merged)
-    } catch {
-      await syncToGAS(gasUrl, localOrders)
-    }
+    await syncToGAS(gasUrl, o)
     setLastSync(new Date())
     setSyncing(false)
   }, [gasUrl])
@@ -1015,35 +1005,11 @@ export default function App() {
     setShowSettings(false)
   }
 
-  async function addOrder(form) {
+  function addOrder(form) {
     const status = form.isSuginami ? 'suginami' : form.isGuided ? 'guided' : form.isInquiry ? 'inquiry' : 'order'
     const newOrder = { ...form, id: generateId(), status, createdAt: new Date().toISOString() }
     const next = [newOrder, ...orders]
-    setOrders(next); setShowForm(false)
-    // 注文フォームと同じ方式でWorkerに直接add_orderで送信
-    try {
-      await fetch(WORKER_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action:    'add_order',
-          id:        newOrder.id,
-          name:      newOrder.name || '',
-          mansion:   newOrder.mansion || '',
-          room:      newOrder.room || '',
-          phone:     newOrder.phone || '',
-          maker:     newOrder.maker || '',
-          items:     newOrder.items || [],
-          keyNumber: newOrder.keyNumber || '',
-          work:      newOrder.work || '',
-          note:      newOrder.work || '',
-          orderMode: 'new',
-          amount:    newOrder.amount || '',
-          status:    newOrder.status,
-          createdAt: newOrder.createdAt
-        })
-      })
-    } catch(e) { console.warn('add_order送信失敗:', e) }
+    setOrders(next); setShowForm(false); syncGAS(next)
   }
 
   function updateOrder(form) {
