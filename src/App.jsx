@@ -89,15 +89,12 @@ const MAKER_PRODUCTS = {
 }
 
 // ============================================================
-// ローカルストレージキー
+// 定数・ローカルストレージキー
 // ============================================================
-const GAS_CONFIG_KEY      = 'gas_url'
-const SESSION_KEY         = 'clh_admin_token'
-const ORDER_API_KEY_KEY   = 'clh_order_api_key'
-const ORDER_GAS_URL_KEY   = 'clh_order_gas_url'
-const DBX_TOKEN_KEY       = 'clh_dbx_token'
-const DBX_FOLDER_KEY      = 'clh_dbx_folder'
-const DEFAULT_GAS_URL     = 'https://script.google.com/macros/s/AKfycby-uBwfzBDk_N5l-tQcq_tb_8ibbT5TczYW7WXqTbQDiu7QmTOeNwxf3-bgYlUYcOo/exec'
+// ⚠️ 全API通信はWorker経由。GAS URLを直接指定してはいけない
+const WORKER_URL      = 'https://web-order.clh-0556-clh.workers.dev'
+const GAS_CONFIG_KEY  = 'gas_url'   // 設定画面の表示用のみ（通信には使わない）
+const SESSION_KEY     = 'clh_admin_token'
 
 // ============================================================
 // ユーティリティ
@@ -145,32 +142,36 @@ function formatDate(iso) {
 }
 
 // ============================================================
-// GAS通信（URLパラメータGETでCORSを回避）
+// Worker通信（全API通信はWorker経由で行う）
+// ⚠️ GASに直接アクセスしてはいけない
 // ============================================================
-async function callGAS(gasUrl, payload) {
+async function callGAS(_gasUrl, payload) {
+  // _gasUrl は使用しない（後方互換のために引数を残す）
   const token = getToken()
   if (token) payload.token = token
-  const params = new URLSearchParams({ data: JSON.stringify(payload) })
-  const res = await fetch(gasUrl + '?' + params.toString(), {
-    redirect: 'follow',
-    credentials: 'omit',
+  const res = await fetch(WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
   })
   return await res.json()
 }
 
-async function syncToGAS(gasUrl, orders) {
-  if (!gasUrl) return false
+async function syncToGAS(_gasUrl, orders) {
   try {
     const token = getToken()
-    await fetch(gasUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'sync', orders, token }) })
-    return true
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'sync', orders, token }),
+    })
+    return res.ok
   } catch { return false }
 }
 
-async function fetchFromGAS(gasUrl) {
-  if (!gasUrl) return null
+async function fetchFromGAS(_gasUrl) {
   try {
-    const res = await fetch(gasUrl + '?action=get', {
+    const res = await fetch(WORKER_URL + '?action=get', {
       redirect: 'follow',
       credentials: 'omit',
     })
@@ -196,7 +197,7 @@ function calcAmounts(items, priceOverride, taxIncluded) {
 // ログイン画面
 // ============================================================
 function LoginScreen({ gasUrl, onLogin, onSetGasUrl }) {
-  const [preUrl, setPreUrl]       = useState(gasUrl || DEFAULT_GAS_URL)
+  const [preUrl, setPreUrl]       = useState(gasUrl || '')
   const [showGasInput, setShowGasInput] = useState(!gasUrl)
   const [email, setEmail]         = useState('')
   const [pass, setPass]           = useState('')
@@ -258,7 +259,7 @@ function LoginScreen({ gasUrl, onLogin, onSetGasUrl }) {
             {urlSaved && <div className="login-gas-ok">✅ 保存しました</div>}
           </div>
         ) : (
-          <button className="login-gas-toggle" onClick={() => { setPreUrl(gasUrl || DEFAULT_GAS_URL); setShowGasInput(true) }}>
+          <button className="login-gas-toggle" onClick={() => { setPreUrl(gasUrl || ''); setShowGasInput(true) }}>
             ⚙️ GAS URL設定
           </button>
         )}
@@ -814,33 +815,24 @@ function SettingsModal({ gasUrl, onSaveGasUrl, onClose, onLogout, deletedOrders,
   const [tab, setTab]             = useState('gas')
   const [salesFrom, setSalesFrom] = useState(() => { const d = new Date(); d.setDate(1); return d.toISOString().slice(0,10) })
   const [salesTo, setSalesTo]     = useState(() => new Date().toISOString().slice(0,10))
-  const [url, setUrl]             = useState(gasUrl || DEFAULT_GAS_URL)
+  const [url, setUrl]             = useState(gasUrl || '')
   const [testStatus, setTestStatus] = useState('')
   const [testLoading, setTestLoading] = useState(false)
-  const [orderApiKey, setOrderApiKey] = useState(() => { try { return localStorage.getItem(ORDER_API_KEY_KEY) || '' } catch { return '' } })
-  const [orderGasUrl, setOrderGasUrl] = useState(() => { try { return localStorage.getItem(ORDER_GAS_URL_KEY) || '' } catch { return '' } })
-  const [dbxToken, setDbxToken]   = useState(() => { try { return localStorage.getItem(DBX_TOKEN_KEY) || '' } catch { return '' } })
-  const [dbxFolder, setDbxFolder] = useState(() => { try { return localStorage.getItem(DBX_FOLDER_KEY) || '/合鍵注文' } catch { return '/合鍵注文' } })
   const [saveMsg, setSaveMsg]     = useState('')
 
   function showMsg(msg) { setSaveMsg(msg); setTimeout(() => setSaveMsg(''), 3000) }
 
   async function testGas() {
     setTestLoading(true); setTestStatus('')
-    try { await fetch(url + '?action=get'); setTestStatus('success') }
+    try { await fetch(WORKER_URL + '?action=get'); setTestStatus('success') }
     catch { setTestStatus('error') }
     finally { setTestLoading(false) }
   }
 
-  function saveGas()      { onSaveGasUrl(url); showMsg('✅ GAS URLを保存しました') }
-  function saveApiKey()   { try { localStorage.setItem(ORDER_API_KEY_KEY, orderApiKey) } catch {} showMsg('✅ APIキーを保存しました') }
-  function saveOrderUrl() { try { localStorage.setItem(ORDER_GAS_URL_KEY, orderGasUrl) } catch {} showMsg('✅ 注文GAS URLを保存しました') }
-  function saveDbx()      { try { localStorage.setItem(DBX_TOKEN_KEY, dbxToken); localStorage.setItem(DBX_FOLDER_KEY, dbxFolder || '/合鍵注文') } catch {} showMsg('✅ Dropbox設定を保存しました') }
+  function saveGas() { onSaveGasUrl(url); showMsg('✅ GAS URLを保存しました') }
 
   const tabs = [
     { id: 'gas',     label: '⚙️ GAS' },
-    { id: 'api',     label: '🔑 APIキー' },
-    { id: 'dropbox', label: '📦 Dropbox' },
     { id: 'deleted', label: `🗑️ 削除済み${deletedOrders.length > 0 ? ` (${deletedOrders.length})` : ''}` },
     { id: 'sales',   label: '📊 売上' },
   ]
@@ -865,39 +857,20 @@ function SettingsModal({ gasUrl, onSaveGasUrl, onClose, onLogout, deletedOrders,
 
           {tab === 'gas' && (
             <div className="settings-section">
-              <div className="settings-title">受注管理 GAS URL</div>
+              <div className="settings-title">受注管理 GAS URL（参照用）</div>
+              <p className="settings-desc">実際の通信はCloudflare Worker経由で行われます。このURLは接続テスト用です。</p>
               <input value={url} onChange={e => setUrl(e.target.value)} placeholder="https://script.google.com/macros/s/..." className="settings-input" autoComplete="off" />
               <div style={{display:'flex',gap:8,marginTop:8}}>
                 <button className="btn-cancel" style={{flex:1}} onClick={testGas} disabled={testLoading}>
-                  {testLoading ? <Loader2 size={14} style={{animation:'spin 1s linear infinite'}} /> : '接続テスト'}
+                  {testLoading ? <Loader2 size={14} style={{animation:'spin 1s linear infinite'}} /> : 'Worker接続テスト'}
                 </button>
                 <button className="btn-save" style={{flex:1}} onClick={saveGas}>保存</button>
               </div>
               {testStatus === 'success' && <p style={{color:'#27ae60',fontSize:13,marginTop:8}}>✓ 接続成功</p>}
               {testStatus === 'error'   && <p style={{color:'#e74c3c',fontSize:13,marginTop:8}}>✗ 接続失敗</p>}
-            </div>
-          )}
-
-          {tab === 'api' && (
-            <div className="settings-section">
-              <div className="settings-title">注文受信 APIキー</div>
-              <p className="settings-desc">顧客注文フォーム（index.html）からの受信時に使用するAPIキーです。</p>
-              <input value={orderApiKey} onChange={e => setOrderApiKey(e.target.value)} placeholder="例: clh-api-xxxxxxxx" className="settings-input" autoComplete="off" />
-              <div className="settings-title" style={{marginTop:16}}>注文フォーム GAS URL</div>
-              <p className="settings-desc">index.htmlが送信先とするGASのURLです（管理GASとは別のエンドポイント）。</p>
-              <input value={orderGasUrl} onChange={e => setOrderGasUrl(e.target.value)} placeholder="https://script.google.com/macros/s/..." className="settings-input" autoComplete="off" />
-              <button className="btn-save" style={{marginTop:12,width:'100%'}} onClick={() => { saveApiKey(); saveOrderUrl() }}>保存</button>
-            </div>
-          )}
-
-          {tab === 'dropbox' && (
-            <div className="settings-section">
-              <div className="settings-title">Dropbox アクセストークン</div>
-              <p className="settings-desc">顧客が送付した写真の保存先です。Dropbox Developersで取得してください。</p>
-              <input value={dbxToken} onChange={e => setDbxToken(e.target.value)} placeholder="Dropboxアクセストークン" className="settings-input" autoComplete="off" />
-              <div className="settings-title" style={{marginTop:16}}>保存フォルダ</div>
-              <input value={dbxFolder} onChange={e => setDbxFolder(e.target.value)} placeholder="/合鍵注文" className="settings-input" />
-              <button className="btn-save" style={{marginTop:12,width:'100%'}} onClick={saveDbx}>保存</button>
+              <div style={{marginTop:16,padding:'12px',background:'rgba(255,165,0,0.08)',borderRadius:6,fontSize:12,color:'var(--text-dim)'}}>
+                ℹ️ APIキー・DropboxトークンはCloudflare環境変数で管理されています
+              </div>
             </div>
           )}
 
@@ -945,7 +918,7 @@ export default function App() {
   const [showForm,     setShowForm]       = useState(false)
   const [editingOrder, setEditingOrder]   = useState(null)
   const [showSettings, setShowSettings]   = useState(false)
-  const [gasUrl,       setGasUrl]         = useState(() => localStorage.getItem(GAS_CONFIG_KEY) || DEFAULT_GAS_URL)
+  const [gasUrl,       setGasUrl]         = useState(() => localStorage.getItem(GAS_CONFIG_KEY) || '')
   const [syncing,      setSyncing]        = useState(false)
   const [lastSync,     setLastSync]       = useState(null)
   const [search,       setSearch]         = useState('')
@@ -963,31 +936,29 @@ export default function App() {
     }
     // 最大5秒で強制終了
     const safetyTimer = setTimeout(() => setLoading(false), 5000)
-    if (!gasUrl) { finishLoading(); clearTimeout(safetyTimer); return }
-    fetchFromGAS(gasUrl).then(remote => {
+    // Worker経由でGASからデータ取得（gasUrl引数は内部で無視される）
+    fetchFromGAS(null).then(remote => {
       if (remote && remote.length > 0) { setOrders(remote); setLastSync(new Date()) }
       finishLoading(); clearTimeout(safetyTimer)
     }).catch(() => { finishLoading(); clearTimeout(safetyTimer) })
     const timer = setInterval(() => {
-      fetchFromGAS(gasUrl).then(remote => {
+      fetchFromGAS(null).then(remote => {
         if (remote && remote.length > 0) { setOrders(remote); setLastSync(new Date()) }
       })
     }, 60000)
     return () => clearInterval(timer)
-  }, [gasUrl, authed])
+  }, [authed])
 
   const syncGAS = useCallback(async (o) => {
-    if (!gasUrl) return
     setSyncing(true)
-    await syncToGAS(gasUrl, o)
+    await syncToGAS(null, o)
     setLastSync(new Date())
     setSyncing(false)
-  }, [gasUrl])
+  }, [])
 
   async function pullFromGAS() {
-    if (!gasUrl) { setShowSettings(true); return }
     setSyncing(true)
-    const remote = await fetchFromGAS(gasUrl)
+    const remote = await fetchFromGAS(null)
     if (remote) { setOrders(remote); setLastSync(new Date()) }
     setSyncing(false)
   }
