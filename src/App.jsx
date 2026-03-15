@@ -1,10 +1,27 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Key, Plus, X, ChevronRight, Phone, Building2, FileText, JapaneseYen, ArrowRight, Loader2, RefreshCw, Settings, Search, AlertTriangle, LogOut, Trash2, RotateCcw, Lock } from 'lucide-react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { Key, Plus, X, ChevronRight, Phone, Building2, FileText, JapaneseYen, ArrowRight, Loader2, RefreshCw, Settings, Search, AlertTriangle, LogOut, RotateCcw, Lock, Users, Check, XCircle } from 'lucide-react'
 import './App.css'
 import Loading from './Loading'
 
 // ============================================================
-// 定数
+// バージョン・定数
+// ============================================================
+const APP_VERSION = 'v2.1.0'
+const WORKER_URL  = 'https://web-order.clh-0556-clh.workers.dev'
+
+// ロール定義
+const ROLE_PERMS = {
+  master: ['view','add','edit','delete','restore','sales','settings','users'],
+  sales:  ['view','add','edit','delete','restore','sales','settings'],
+  staff:  ['view','add','status_change'],
+}
+function can(role, action) {
+  return (ROLE_PERMS[role] || ROLE_PERMS.staff).includes(action)
+}
+const ROLE_LABELS = { master: 'マスター', sales: '売上管理', staff: 'スタッフ' }
+
+// ============================================================
+// ステータス・アラート・メーカー定義
 // ============================================================
 const STATUSES = [
   { id: 'inquiry',   label: 'お問合せ',      color: '#e67e22', bg: 'rgba(230,126,34,0.12)',  icon: '💬' },
@@ -89,25 +106,57 @@ const MAKER_PRODUCTS = {
 }
 
 // ============================================================
-// 定数・ローカルストレージキー
+// セッション管理（token + role を sessionStorage に保存）
 // ============================================================
-// ⚠️ 全API通信はWorker経由。GAS URLを直接指定してはいけない
-const WORKER_URL      = 'https://web-order.clh-0556-clh.workers.dev'
-const GAS_CONFIG_KEY  = 'gas_url'   // 設定画面の表示用のみ（通信には使わない）
-const SESSION_KEY     = 'clh_admin_token'
+const SESSION_KEY = 'clh_admin_token'
+const ROLE_KEY    = 'clh_admin_role'
 
-// ============================================================
-// ユーティリティ
-// ============================================================
-function getToken()    { try { return sessionStorage.getItem(SESSION_KEY) || '' } catch { return '' } }
-function setToken(v)   { try { sessionStorage.setItem(SESSION_KEY, v) } catch {} }
-function clearToken()  { try { sessionStorage.removeItem(SESSION_KEY) } catch {} }
+function getToken()        { try { return sessionStorage.getItem(SESSION_KEY) || '' } catch { return '' } }
+function setToken(v)       { try { sessionStorage.setItem(SESSION_KEY, v) } catch {} }
+function clearToken()      { try { sessionStorage.removeItem(SESSION_KEY) } catch {} }
+function getRoleSession()  { try { return sessionStorage.getItem(ROLE_KEY) || '' } catch { return '' } }
+function setRoleSession(v) { try { sessionStorage.setItem(ROLE_KEY, v) } catch {} }
+function clearRoleSession(){ try { sessionStorage.removeItem(ROLE_KEY) } catch {} }
 
 async function sha256(message) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(message))
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
+// ============================================================
+// API通信（全てWorker経由・個別操作）
+// ============================================================
+async function apiCall(payload) {
+  const token = getToken()
+  if (token) payload.token = token
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) return { status: 'error', message: 'サーバーエラー(' + res.status + ')' }
+    return await res.json()
+  } catch { return { status: 'error', message: 'ネットワークエラーが発生しました' } }
+}
+
+async function fetchOrders() {
+  try {
+    const data = await apiCall({ action: 'get_orders' })
+    return data.orders || null
+  } catch { return null }
+}
+
+async function fetchDeletedOrders() {
+  try {
+    const data = await apiCall({ action: 'get_deleted' })
+    return data.orders || []
+  } catch { return [] }
+}
+
+// ============================================================
+// ユーティリティ
+// ============================================================
 function getAlertInfo(order) {
   const alert = ALERTS.find(a => a.status === order.status)
   if (!alert || !order.createdAt) return null
@@ -141,45 +190,6 @@ function formatDate(iso) {
   return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
 }
 
-// ============================================================
-// Worker通信（全API通信はWorker経由で行う）
-// ⚠️ GASに直接アクセスしてはいけない
-// ============================================================
-async function callGAS(_gasUrl, payload) {
-  // _gasUrl は使用しない（後方互換のために引数を残す）
-  const token = getToken()
-  if (token) payload.token = token
-  const res = await fetch(WORKER_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-  return await res.json()
-}
-
-async function syncToGAS(_gasUrl, orders) {
-  try {
-    const token = getToken()
-    const res = await fetch(WORKER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'sync', orders, token }),
-    })
-    return res.ok
-  } catch { return false }
-}
-
-async function fetchFromGAS(_gasUrl) {
-  try {
-    const res = await fetch(WORKER_URL + '?action=get', {
-      redirect: 'follow',
-      credentials: 'omit',
-    })
-    const data = await res.json()
-    return data.orders || null
-  } catch { return null }
-}
-
 function calcAmounts(items, priceOverride, taxIncluded) {
   if (priceOverride && priceOverride.startsWith('@')) {
     const val = Number(priceOverride.slice(1).replace(/,/g, ''))
@@ -194,46 +204,60 @@ function calcAmounts(items, priceOverride, taxIncluded) {
 }
 
 // ============================================================
-// ログイン画面
+// ログイン画面（アクセス申請フォーム付き）
 // ============================================================
-function LoginScreen({ gasUrl, onLogin, onSetGasUrl }) {
-  const [preUrl, setPreUrl]       = useState(gasUrl || '')
-  const [showGasInput, setShowGasInput] = useState(!gasUrl)
-  const [email, setEmail]         = useState('')
-  const [pass, setPass]           = useState('')
-  const [err, setErr]             = useState('')
-  const [loading, setLoading]     = useState(false)
-  const [urlSaved, setUrlSaved]   = useState(false)
-
-  function saveUrl() {
-    if (!preUrl.trim()) { setErr('URLを入力してください'); return }
-    onSetGasUrl(preUrl.trim())
-    setUrlSaved(true)
-    setErr('')
-  }
+function LoginScreen({ onLogin }) {
+  const [mode, setMode]       = useState('login') // 'login' | 'request'
+  const [email, setEmail]     = useState('')
+  const [pass, setPass]       = useState('')
+  const [err, setErr]         = useState('')
+  const [msg, setMsg]         = useState('')
+  const [loading, setLoading] = useState(false)
 
   async function doLogin() {
-    setErr('')
+    setErr(''); setMsg('')
     if (!email || !pass) { setErr('メールアドレスとパスワードを入力してください'); return }
-    if (!gasUrl) { setErr('先にGAS URLを保存してください'); return }
     setLoading(true)
     try {
       const passHash = await sha256(pass)
-      const json = await callGAS(gasUrl, { action: 'admin_login', email, passHash })
+      const json = await apiCall({ action: 'admin_login', email, passHash })
       if (json.status === 'ok' && json.token) {
         setToken(json.token)
-        onLogin()
+        setRoleSession(json.role || 'staff')
+        onLogin(json.role || 'staff')
       } else {
         setErr(json.message || 'メールアドレスまたはパスワードが違います')
       }
     } catch (e) {
-      setErr('GASに接続できません: ' + e.message)
+      setErr('接続エラーが発生しました')
     } finally {
       setLoading(false)
     }
   }
 
-  function onKeyDown(e) { if (e.key === 'Enter') doLogin() }
+  async function doRequest() {
+    setErr(''); setMsg('')
+    if (!email || !pass) { setErr('メールアドレスとパスワードを入力してください'); return }
+    if (pass.length < 6) { setErr('パスワードは6文字以上で設定してください'); return }
+    setLoading(true)
+    try {
+      const passHash = await sha256(pass)
+      const json = await apiCall({ action: 'request_access', email, passHash })
+      if (json.status === 'ok') {
+        setMsg(json.message || '申請を受け付けました。管理者の承認をお待ちください。')
+        setMode('login')
+        setEmail(''); setPass('')
+      } else {
+        setErr(json.message || '申請に失敗しました')
+      }
+    } catch {
+      setErr('接続エラーが発生しました')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function onKeyDown(e) { if (e.key === 'Enter') { mode === 'login' ? doLogin() : doRequest() } }
 
   return (
     <div className="login-screen">
@@ -241,35 +265,34 @@ function LoginScreen({ gasUrl, onLogin, onSetGasUrl }) {
         <div className="login-logo"><Key size={28} color="var(--accent)" /><span>一般受注管理</span></div>
         <div className="login-sub">CARLOCK HOMES ADMIN</div>
 
-        {showGasInput ? (
-          <div className="login-gas-section">
-            <div className="login-gas-label">GAS URLを設定</div>
-            <div className="login-gas-row">
-              <input
-                className="login-input"
-                type="url"
-                placeholder="https://script.google.com/macros/s/..."
-                value={preUrl}
-                onChange={e => setPreUrl(e.target.value)}
-                autoComplete="off"
-                style={{fontSize:11}}
-              />
-              <button className="login-gas-btn" onClick={saveUrl}>保存</button>
-            </div>
-            {urlSaved && <div className="login-gas-ok">✅ 保存しました</div>}
-          </div>
+        {mode === 'login' ? (
+          <>
+            <input className="login-input" type="email"    placeholder="メールアドレス" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={onKeyDown} autoComplete="username" />
+            <input className="login-input" type="password" placeholder="パスワード"     value={pass}  onChange={e => setPass(e.target.value)}  onKeyDown={onKeyDown} autoComplete="current-password" />
+            <button className="login-btn" onClick={doLogin} disabled={loading}>
+              {loading ? <Loader2 size={16} style={{animation:'spin 1s linear infinite'}} /> : <><Lock size={15} /> ログイン</>}
+            </button>
+            {err && <div className="login-err">{err}</div>}
+            {msg && <div className="login-ok">{msg}</div>}
+            <button className="login-sub-link" onClick={() => { setMode('request'); setErr(''); setMsg('') }}>
+              アクセス申請はこちら
+            </button>
+          </>
         ) : (
-          <button className="login-gas-toggle" onClick={() => { setPreUrl(gasUrl || ''); setShowGasInput(true) }}>
-            ⚙️ GAS URL設定
-          </button>
+          <>
+            <div className="login-request-title">🔐 アクセス申請</div>
+            <p className="login-request-note">申請後、管理者が承認するとログインできます</p>
+            <input className="login-input" type="email"    placeholder="メールアドレス" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={onKeyDown} autoComplete="email" />
+            <input className="login-input" type="password" placeholder="パスワード（6文字以上）" value={pass} onChange={e => setPass(e.target.value)} onKeyDown={onKeyDown} autoComplete="new-password" />
+            <button className="login-btn" onClick={doRequest} disabled={loading}>
+              {loading ? <Loader2 size={16} style={{animation:'spin 1s linear infinite'}} /> : '申請する'}
+            </button>
+            {err && <div className="login-err">{err}</div>}
+            <button className="login-sub-link" onClick={() => { setMode('login'); setErr('') }}>
+              ← ログインに戻る
+            </button>
+          </>
         )}
-
-        <input className="login-input" type="email"    placeholder="メールアドレス" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={onKeyDown} autoComplete="username" />
-        <input className="login-input" type="password" placeholder="パスワード"     value={pass}  onChange={e => setPass(e.target.value)}  onKeyDown={onKeyDown} autoComplete="current-password" />
-        <button className="login-btn" onClick={doLogin} disabled={loading}>
-          {loading ? <Loader2 size={16} style={{animation:'spin 1s linear infinite'}} /> : <><Lock size={15} /> ログイン</>}
-        </button>
-        {err && <div className="login-err">{err}</div>}
       </div>
     </div>
   )
@@ -303,7 +326,7 @@ function AlertCard({ alert, count, onClick, active }) {
   )
 }
 
-function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel }) {
+function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelete, canEdit }) {
   const [expanded, setExpanded] = useState(false)
   const st = STATUSES.find(s => s.id === order.status) || STATUSES[1]
   const transitions = STATUS_TRANSITIONS[order.status] || []
@@ -396,14 +419,14 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel }) {
               })}
             </div>
             <div className="card-controls">
-              <button className="ctrl-btn edit" onClick={() => onEdit(order)}>編集</button>
+              {canEdit && <button className="ctrl-btn edit" onClick={() => onEdit(order)}>編集</button>}
               {order.status !== 'done' && order.status !== 'cancelled' && (
                 <button className="ctrl-btn done" onClick={() => onStatusChange(order.id, 'done')}>✅ 完了</button>
               )}
               {order.status !== 'cancelled' && (
                 <button className="ctrl-btn cancel" onClick={() => onCancel(order.id)}>❌ キャンセル</button>
               )}
-              <button className="ctrl-btn del" onClick={() => onDelete(order.id)}>削除</button>
+              {canDelete && <button className="ctrl-btn del" onClick={() => onDelete(order.id)}>削除</button>}
             </div>
           </div>
         </div>
@@ -412,7 +435,6 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel }) {
   )
 }
 
-// 商品セレクター
 function isStandardKey(name) {
   return name === '標準キー' || name === 'F22 標準キー' || name === 'T20 標準キー'
 }
@@ -533,9 +555,7 @@ function OrderForm({ initial, onSave, onCancel }) {
               <span>📋 案内済みとして登録</span>
             </label>
             <label className="toggle-label" style={{marginTop:6}}>
-              <input type="checkbox" name="isSuginami" checked={form.isSuginami || false} onChange={e => {
-                handle(e); if (e.target.checked) setForm(f => ({ ...f, isInquiry: false, isGuided: false }))
-              }} />
+              <input type="checkbox" name="isSuginami" checked={form.isSuginami || false} onChange={e => { handle(e); if (e.target.checked) setForm(f => ({ ...f, isInquiry: false, isGuided: false })) }} />
               <span>🏢 杉並本社（受付）として登録</span>
             </label>
             <p className="toggle-note">チェックなしの場合は受注セクションで処理されます</p>
@@ -556,24 +576,15 @@ function OrderForm({ initial, onSave, onCancel }) {
             ))}
           </div>
           {form.maker ? <ItemSelector maker={form.maker} items={form.items} onChange={items => setForm(f => ({ ...f, items }))} /> : <div className="maker-hint">↑ メーカーを選択すると商品を追加できます</div>}
-          {/* キーナンバー入力（標準キー選択時のみ） */}
           {showKeyNumber && (
             <div className="keynumber-section">
               <label className="keynumber-label">
                 🔑 キーナンバー <span className="req">*</span>
-                <input
-                  name="keyNumber"
-                  value={form.keyNumber}
-                  onChange={handle}
-                  placeholder="例: KY-1234"
-                  className="keynumber-input"
-                  autoComplete="off"
-                />
+                <input name="keyNumber" value={form.keyNumber} onChange={handle} placeholder="例: KY-1234" className="keynumber-input" autoComplete="off" />
               </label>
               <p className="keynumber-hint">標準キーの複製に必要なキーナンバーを入力してください</p>
             </div>
           )}
-
           <div className="price-summary">
             {isTaxIncluded && <div className="tax-included-notice">💡 シブタニは税込み価格のため消費税計算をスキップします</div>}
             <div className="price-row">
@@ -615,30 +626,21 @@ function OrderForm({ initial, onSave, onCancel }) {
   )
 }
 
-// SalesTab コンポーネント（App.jsxに挿入する）
-// SettingsModal の直前に配置
-
+// ============================================================
+// 売上タブ
+// ============================================================
 function SalesTab({ allOrders, salesFrom, salesTo, setSalesFrom, setSalesTo }) {
-  // 期間内の完了受注を抽出
   const filtered = allOrders.filter(o => {
     if (o.status !== 'done') return false
     if (!o.createdAt) return false
     const d = o.createdAt.slice(0,10)
     return d >= salesFrom && d <= salesTo
   })
-
-  // 売上集計
   const salesData = filtered.map(o => {
-    const amount = Number(o.amount) || 0
-    const maker = o.maker || ''
-    // シブタニは税込み価格なので逆算、それ以外は税抜き×1.1が税込み
-    const taxIncluded = maker === 'shibutani'
-    const taxIncAmt   = amount  // amountは常に税込み請求金額
-    const taxExAmt    = taxIncluded
-      ? Math.round(amount / 1.1)   // 税込み→税抜き逆算
-      : Math.round(amount / 1.1)   // 通常も同様
-    const tax = taxIncAmt - taxExAmt
-    // 仕入れ（商品のみ、作業費・手数料類を除く）
+    const amount     = Number(o.amount) || 0
+    const taxIncAmt  = amount
+    const taxExAmt   = Math.round(amount / 1.1)
+    const tax        = taxIncAmt - taxExAmt
     const purchaseItems = (o.items || []).filter(it => {
       const n = it.name || ''
       return !n.includes('作業費') && !n.includes('手数料') && !n.includes('出張費') && !n.includes('事務') && !n.includes('送料')
@@ -646,13 +648,10 @@ function SalesTab({ allOrders, salesFrom, salesTo, setSalesFrom, setSalesTo }) {
     const purchaseTotal = purchaseItems.reduce((s, it) => s + (it.price * (it.qty || 1)), 0)
     return { ...o, taxIncAmt, taxExAmt, tax, purchaseItems, purchaseTotal }
   })
-
-  const totalTaxInc  = salesData.reduce((s, o) => s + o.taxIncAmt, 0)
-  const totalTaxEx   = salesData.reduce((s, o) => s + o.taxExAmt, 0)
-  const totalTax     = salesData.reduce((s, o) => s + o.tax, 0)
+  const totalTaxInc   = salesData.reduce((s, o) => s + o.taxIncAmt, 0)
+  const totalTaxEx    = salesData.reduce((s, o) => s + o.taxExAmt, 0)
+  const totalTax      = salesData.reduce((s, o) => s + o.tax, 0)
   const totalPurchase = salesData.reduce((s, o) => s + o.purchaseTotal, 0)
-
-  // 商品別集計
   const itemMap = {}
   salesData.forEach(o => {
     (o.items || []).forEach(it => {
@@ -664,14 +663,9 @@ function SalesTab({ allOrders, salesFrom, salesTo, setSalesFrom, setSalesTo }) {
   })
   const itemList = Object.values(itemMap).sort((a,b) => b.total - a.total)
 
-  // Excel出力
   async function exportExcel() {
-    // SheetJSを使ってExcel生成
     const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs')
-
     const wb = XLSX.utils.book_new()
-
-    // ── サマリーシート ──
     const summaryData = [
       ['カーロックホームズ 売上レポート'],
       ['期間', `${salesFrom} ～ ${salesTo}`],
@@ -687,58 +681,40 @@ function SalesTab({ allOrders, salesFrom, salesTo, setSalesFrom, setSalesTo }) {
     const wsSummary = XLSX.utils.aoa_to_sheet(summaryData)
     wsSummary['!cols'] = [{wch:30},{wch:20}]
     XLSX.utils.book_append_sheet(wb, wsSummary, 'サマリー')
-
-    // ── 受注明細シート（月別） ──
     const months = {}
     salesData.forEach(o => {
       const m = (o.createdAt || '').slice(0,7)
       if (!months[m]) months[m] = []
       months[m].push(o)
     })
-
     Object.entries(months).sort().forEach(([month, rows]) => {
       const header = ['受注ID','氏名','マンション','部屋','メーカー','作業内容','税込金額','税抜金額','消費税','仕入れ合計','登録日']
       const data = [header, ...rows.map(o => [
         o.id, o.name, o.mansion, o.room ? o.room+'号室' : '',
         MAKERS.find(m=>m.id===o.maker)?.label || o.maker || '',
-        o.work,
-        o.taxIncAmt, o.taxExAmt, o.tax, o.purchaseTotal,
+        o.work, o.taxIncAmt, o.taxExAmt, o.tax, o.purchaseTotal,
         (o.createdAt || '').slice(0,10)
       ])]
       const ws = XLSX.utils.aoa_to_sheet(data)
       ws['!cols'] = [{wch:20},{wch:12},{wch:20},{wch:8},{wch:12},{wch:30},{wch:12},{wch:12},{wch:10},{wch:12},{wch:12}]
       XLSX.utils.book_append_sheet(wb, ws, month)
     })
-
-    // ── 商品別仕入れシート ──
     const itemHeader = ['商品名','単価','数量','合計金額']
     const itemData = [itemHeader, ...itemList.map(it => [it.name, it.price, it.qty, it.total])]
     const wsItems = XLSX.utils.aoa_to_sheet(itemData)
     wsItems['!cols'] = [{wch:35},{wch:12},{wch:8},{wch:12}]
     XLSX.utils.book_append_sheet(wb, wsItems, '商品別仕入れ')
-
-    // ダウンロード
     XLSX.writeFile(wb, `売上レポート_${salesFrom}_${salesTo}.xlsx`)
   }
 
   return (
     <div className="settings-section">
       <div className="settings-title">売上集計（完了分）</div>
-
-      {/* 期間選択 */}
       <div className="sales-period-row">
-        <div className="sales-period-item">
-          <span className="sales-period-label">開始日</span>
-          <input type="date" className="settings-input" value={salesFrom} onChange={e => setSalesFrom(e.target.value)} />
-        </div>
+        <div className="sales-period-item"><span className="sales-period-label">開始日</span><input type="date" className="settings-input" value={salesFrom} onChange={e => setSalesFrom(e.target.value)} /></div>
         <span className="sales-period-sep">〜</span>
-        <div className="sales-period-item">
-          <span className="sales-period-label">終了日</span>
-          <input type="date" className="settings-input" value={salesTo} onChange={e => setSalesTo(e.target.value)} />
-        </div>
+        <div className="sales-period-item"><span className="sales-period-label">終了日</span><input type="date" className="settings-input" value={salesTo} onChange={e => setSalesTo(e.target.value)} /></div>
       </div>
-
-      {/* クイック選択 */}
       <div className="sales-quick-btns">
         {[
           { label: '今月', fn: () => { const d = new Date(); const f = new Date(d.getFullYear(), d.getMonth(), 1); setSalesFrom(f.toISOString().slice(0,10)); setSalesTo(d.toISOString().slice(0,10)) }},
@@ -747,99 +723,146 @@ function SalesTab({ allOrders, salesFrom, salesTo, setSalesFrom, setSalesTo }) {
           { label: '全期間', fn: () => { setSalesFrom('2020-01-01'); setSalesTo(new Date().toISOString().slice(0,10)) }},
         ].map(b => <button key={b.label} className="sales-quick-btn" onClick={b.fn}>{b.label}</button>)}
       </div>
-
-      {/* 集計カード */}
       {filtered.length === 0 ? (
         <div className="deleted-empty">期間内に完了した受注がありません</div>
       ) : (
         <>
           <div className="sales-summary-grid">
-            <div className="sales-card">
-              <div className="sales-card-label">対象件数</div>
-              <div className="sales-card-value">{filtered.length}<span className="sales-card-unit">件</span></div>
-            </div>
-            <div className="sales-card">
-              <div className="sales-card-label">税込み売上</div>
-              <div className="sales-card-value sales-card-accent">¥{totalTaxInc.toLocaleString()}</div>
-            </div>
-            <div className="sales-card">
-              <div className="sales-card-label">税抜き売上</div>
-              <div className="sales-card-value">¥{totalTaxEx.toLocaleString()}</div>
-            </div>
-            <div className="sales-card">
-              <div className="sales-card-label">消費税</div>
-              <div className="sales-card-value sales-card-dim">¥{totalTax.toLocaleString()}</div>
-            </div>
-            <div className="sales-card">
-              <div className="sales-card-label">仕入れ合計</div>
-              <div className="sales-card-value sales-card-warn">¥{totalPurchase.toLocaleString()}</div>
-            </div>
-            <div className="sales-card">
-              <div className="sales-card-label">粗利（税抜き－仕入れ）</div>
-              <div className="sales-card-value sales-card-profit">¥{(totalTaxEx - totalPurchase).toLocaleString()}</div>
-            </div>
+            <div className="sales-card"><div className="sales-card-label">対象件数</div><div className="sales-card-value">{filtered.length}<span className="sales-card-unit">件</span></div></div>
+            <div className="sales-card"><div className="sales-card-label">税込み売上</div><div className="sales-card-value sales-card-accent">¥{totalTaxInc.toLocaleString()}</div></div>
+            <div className="sales-card"><div className="sales-card-label">税抜き売上</div><div className="sales-card-value">¥{totalTaxEx.toLocaleString()}</div></div>
+            <div className="sales-card"><div className="sales-card-label">消費税</div><div className="sales-card-value sales-card-dim">¥{totalTax.toLocaleString()}</div></div>
+            <div className="sales-card"><div className="sales-card-label">仕入れ合計</div><div className="sales-card-value sales-card-warn">¥{totalPurchase.toLocaleString()}</div></div>
+            <div className="sales-card"><div className="sales-card-label">粗利</div><div className="sales-card-value sales-card-profit">¥{(totalTaxEx - totalPurchase).toLocaleString()}</div></div>
           </div>
-
-          {/* 商品別TOP */}
           {itemList.length > 0 && (
-            <div style={{marginTop:12}}>
-              <div className="settings-title" style={{marginBottom:8}}>商品別仕入れ</div>
-              <div className="item-summary-list">
-                {itemList.slice(0,8).map(it => (
-                  <div key={it.name} className="item-summary-row">
-                    <span className="item-summary-name">{it.name}</span>
-                    <span className="item-summary-qty">×{it.qty}</span>
-                    <span className="item-summary-total">¥{it.total.toLocaleString()}</span>
+            <div style={{marginTop:16}}>
+              <div className="settings-title" style={{fontSize:12}}>商品別仕入れ</div>
+              <div className="deleted-list">
+                {itemList.slice(0,10).map(it => (
+                  <div key={it.name} className="deleted-row">
+                    <div className="deleted-info"><div className="deleted-name">{it.name}</div><div className="deleted-sub">¥{it.price.toLocaleString()} × {it.qty}個</div></div>
+                    <div style={{fontWeight:700,color:'var(--accent)'}}>¥{it.total.toLocaleString()}</div>
                   </div>
                 ))}
-                {itemList.length > 8 && <div className="item-summary-more">他 {itemList.length - 8} 商品</div>}
               </div>
             </div>
           )}
-
-          {/* Excel出力ボタン */}
-          <button className="btn-save" style={{marginTop:16,width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:8}} onClick={exportExcel}>
-            📥 Excelで出力（{salesFrom}〜{salesTo}）
-          </button>
+          <button className="btn-save" style={{marginTop:16,width:'100%'}} onClick={exportExcel}>📥 Excelでエクスポート</button>
         </>
       )}
     </div>
   )
 }
 
-
 // ============================================================
-// 設定モーダル（タブ付き）
+// ユーザー管理タブ（master専用）
 // ============================================================
-function SettingsModal({ gasUrl, onSaveGasUrl, onClose, onLogout, deletedOrders, onRestore, allOrders }) {
-  const [tab, setTab]             = useState('gas')
-  const [salesFrom, setSalesFrom] = useState(() => { const d = new Date(); d.setDate(1); return d.toISOString().slice(0,10) })
-  const [salesTo, setSalesTo]     = useState(() => new Date().toISOString().slice(0,10))
-  const [url, setUrl]             = useState(gasUrl || '')
-  const [testStatus, setTestStatus] = useState('')
-  const [testLoading, setTestLoading] = useState(false)
-  const [saveMsg, setSaveMsg]     = useState('')
+function UsersTab() {
+  const [users, setUsers]     = useState([])
+  const [loading, setLoading] = useState(true)
+  const [msg, setMsg]         = useState('')
 
-  function showMsg(msg) { setSaveMsg(msg); setTimeout(() => setSaveMsg(''), 3000) }
+  useEffect(() => {
+    apiCall({ action: 'get_users' }).then(res => {
+      setUsers(res.users || [])
+      setLoading(false)
+    })
+  }, [])
 
-  async function testGas() {
-    setTestLoading(true); setTestStatus('')
-    try { await fetch(WORKER_URL + '?action=get'); setTestStatus('success') }
-    catch { setTestStatus('error') }
-    finally { setTestLoading(false) }
+  async function approve(email, role) {
+    const res = await apiCall({ action: 'approve_user', email, role })
+    if (res.status === 'ok') {
+      setMsg(email + ' を承認しました')
+      setUsers(prev => prev.map(u => u.email === email ? { ...u, approved: 'TRUE', role } : u))
+    } else {
+      setMsg('エラー: ' + (res.message || '失敗'))
+    }
+    setTimeout(() => setMsg(''), 3000)
   }
 
-  function saveGas() { onSaveGasUrl(url); showMsg('✅ GAS URLを保存しました') }
+  async function reject(email) {
+    if (!confirm(email + ' を削除しますか？')) return
+    const res = await apiCall({ action: 'reject_user', email })
+    if (res.status === 'ok') {
+      setUsers(prev => prev.filter(u => u.email !== email))
+      setMsg(email + ' を削除しました')
+    }
+    setTimeout(() => setMsg(''), 3000)
+  }
+
+  const pending  = users.filter(u => u.approved !== 'TRUE')
+  const approved = users.filter(u => u.approved === 'TRUE')
+
+  if (loading) return <div className="deleted-empty"><Loader2 size={18} style={{animation:'spin 1s linear infinite'}} /> 読み込み中...</div>
+
+  return (
+    <div className="settings-section">
+      {msg && <div className="settings-save-msg">{msg}</div>}
+      {pending.length > 0 && (
+        <>
+          <div className="settings-title" style={{color:'#e67e22'}}>⏳ 承認待ち ({pending.length}件)</div>
+          <div className="deleted-list">
+            {pending.map(u => (
+              <div key={u.email} className="deleted-row">
+                <div className="deleted-info">
+                  <div className="deleted-name">{u.email}</div>
+                  <div className="deleted-sub">{formatDate(u.createdAt)} 申請</div>
+                </div>
+                <div style={{display:'flex',gap:6}}>
+                  <button className="restore-btn" style={{background:'rgba(39,174,96,0.15)',color:'#27ae60'}}
+                    onClick={() => approve(u.email, 'staff')}><Check size={13}/> 承認(スタッフ)</button>
+                  <button className="restore-btn" style={{background:'rgba(52,152,219,0.15)',color:'#3498db'}}
+                    onClick={() => approve(u.email, 'sales')}><Check size={13}/> 承認(売上)</button>
+                  <button className="restore-btn" style={{background:'rgba(231,76,60,0.15)',color:'#e74c3c'}}
+                    onClick={() => reject(u.email)}><XCircle size={13}/> 却下</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      {approved.length > 0 && (
+        <>
+          <div className="settings-title" style={{marginTop: pending.length > 0 ? 16 : 0}}>✅ 承認済みユーザー ({approved.length}人)</div>
+          <div className="deleted-list">
+            {approved.map(u => (
+              <div key={u.email} className="deleted-row">
+                <div className="deleted-info">
+                  <div className="deleted-name">{u.email}</div>
+                  <div className="deleted-sub">{ROLE_LABELS[u.role] || u.role} · {formatDate(u.createdAt)} 登録</div>
+                </div>
+                <button className="restore-btn" style={{background:'rgba(231,76,60,0.15)',color:'#e74c3c'}}
+                  onClick={() => reject(u.email)}><XCircle size={13}/> 削除</button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      {users.length === 0 && <div className="deleted-empty">登録ユーザーはいません</div>}
+    </div>
+  )
+}
+
+// ============================================================
+// 設定モーダル（ロール対応）
+// ============================================================
+function SettingsModal({ role, onClose, onLogout, deletedOrders, onRestore, allOrders }) {
+  const defaultTab = can(role, 'users') ? 'users' : can(role, 'sales') ? 'sales' : 'deleted'
+  const [tab, setTab]             = useState(defaultTab)
+  const [salesFrom, setSalesFrom] = useState(() => { const d = new Date(); d.setDate(1); return d.toISOString().slice(0,10) })
+  const [salesTo, setSalesTo]     = useState(() => new Date().toISOString().slice(0,10))
+  const [saveMsg, setSaveMsg]     = useState('')
 
   const tabs = [
-    { id: 'gas',     label: '⚙️ GAS' },
-    { id: 'deleted', label: `🗑️ 削除済み${deletedOrders.length > 0 ? ` (${deletedOrders.length})` : ''}` },
-    { id: 'sales',   label: '📊 売上' },
-  ]
+    can(role, 'users')    && { id: 'users',   label: '👥 ユーザー' },
+    can(role, 'sales')    && { id: 'sales',   label: '📊 売上' },
+    can(role, 'restore')  && { id: 'deleted', label: `🗑️ 削除済み${deletedOrders.length > 0 ? ` (${deletedOrders.length})` : ''}` },
+  ].filter(Boolean)
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{maxWidth:560}}>
+      <div className="modal" style={{maxWidth:580}}>
         <div className="modal-header">
           <h2>設定</h2>
           <div style={{display:'flex',gap:8}}>
@@ -848,32 +871,17 @@ function SettingsModal({ gasUrl, onSaveGasUrl, onClose, onLogout, deletedOrders,
           </div>
         </div>
 
-        <div className="settings-tabs">
-          {tabs.map(t => <button key={t.id} className={`settings-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.label}</button>)}
-        </div>
+        {tabs.length > 0 && (
+          <div className="settings-tabs">
+            {tabs.map(t => <button key={t.id} className={`settings-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.label}</button>)}
+          </div>
+        )}
 
         <div style={{padding:'20px 24px 24px'}}>
           {saveMsg && <div className="settings-save-msg">{saveMsg}</div>}
 
-          {tab === 'gas' && (
-            <div className="settings-section">
-              <div className="settings-title">受注管理 GAS URL（参照用）</div>
-              <p className="settings-desc">実際の通信はCloudflare Worker経由で行われます。このURLは接続テスト用です。</p>
-              <input value={url} onChange={e => setUrl(e.target.value)} placeholder="https://script.google.com/macros/s/..." className="settings-input" autoComplete="off" />
-              <div style={{display:'flex',gap:8,marginTop:8}}>
-                <button className="btn-cancel" style={{flex:1}} onClick={testGas} disabled={testLoading}>
-                  {testLoading ? <Loader2 size={14} style={{animation:'spin 1s linear infinite'}} /> : 'Worker接続テスト'}
-                </button>
-                <button className="btn-save" style={{flex:1}} onClick={saveGas}>保存</button>
-              </div>
-              {testStatus === 'success' && <p style={{color:'#27ae60',fontSize:13,marginTop:8}}>✓ 接続成功</p>}
-              {testStatus === 'error'   && <p style={{color:'#e74c3c',fontSize:13,marginTop:8}}>✗ 接続失敗</p>}
-              <div style={{marginTop:16,padding:'12px',background:'rgba(255,165,0,0.08)',borderRadius:6,fontSize:12,color:'var(--text-dim)'}}>
-                ℹ️ APIキー・DropboxトークンはCloudflare環境変数で管理されています
-              </div>
-            </div>
-          )}
-
+          {tab === 'users'   && <UsersTab />}
+          {tab === 'sales'   && <SalesTab allOrders={allOrders} salesFrom={salesFrom} salesTo={salesTo} setSalesFrom={setSalesFrom} setSalesTo={setSalesTo} />}
           {tab === 'deleted' && (
             <div className="settings-section">
               <div className="settings-title">削除済み受注</div>
@@ -896,10 +904,7 @@ function SettingsModal({ gasUrl, onSaveGasUrl, onClose, onLogout, deletedOrders,
               )}
             </div>
           )}
-
-          {tab === 'sales' && (
-            <SalesTab allOrders={allOrders} salesFrom={salesFrom} salesTo={salesTo} setSalesFrom={setSalesFrom} setSalesTo={setSalesTo} />
-          )}
+          {tabs.length === 0 && <div className="deleted-empty">アクセス可能な設定がありません</div>}
         </div>
       </div>
     </div>
@@ -911,22 +916,24 @@ function SettingsModal({ gasUrl, onSaveGasUrl, onClose, onLogout, deletedOrders,
 // ============================================================
 export default function App() {
   const [authed, setAuthed]   = useState(() => !!getToken())
+  const [role,   setRole]     = useState(() => getRoleSession())
   const [orders, setOrders]   = useState(() => { try { const s = localStorage.getItem('key_orders'); return s ? JSON.parse(s) : SAMPLE_DATA } catch { return SAMPLE_DATA } })
-  const [deletedOrders, setDeletedOrders] = useState(() => { try { const s = localStorage.getItem('key_orders_deleted'); return s ? JSON.parse(s) : [] } catch { return [] } })
+  const [deletedOrders, setDeletedOrders] = useState([])
   const [activeStatus, setActiveStatus]   = useState(null)
   const [activeAlert,  setActiveAlert]    = useState(null)
   const [showForm,     setShowForm]       = useState(false)
   const [editingOrder, setEditingOrder]   = useState(null)
   const [showSettings, setShowSettings]   = useState(false)
-  const [gasUrl,       setGasUrl]         = useState(() => localStorage.getItem(GAS_CONFIG_KEY) || '')
   const [syncing,      setSyncing]        = useState(false)
   const [lastSync,     setLastSync]       = useState(null)
+  const [syncError,    setSyncError]      = useState('')
   const [search,       setSearch]         = useState('')
   const [loading,      setLoading]        = useState(true)
 
+  // 受注データをlocalStorageにキャッシュ
   useEffect(() => { localStorage.setItem('key_orders', JSON.stringify(orders)) }, [orders])
-  useEffect(() => { localStorage.setItem('key_orders_deleted', JSON.stringify(deletedOrders)) }, [deletedOrders])
 
+  // ログイン後：GASからデータ取得（60秒ポーリング）
   useEffect(() => {
     if (!authed) { setLoading(false); return }
     const startTime = Date.now()
@@ -934,94 +941,133 @@ export default function App() {
       const remain = Math.max(0, 1500 - (Date.now() - startTime))
       setTimeout(() => setLoading(false), remain)
     }
-    // 最大5秒で強制終了
     const safetyTimer = setTimeout(() => setLoading(false), 5000)
-    // Worker経由でGASからデータ取得（gasUrl引数は内部で無視される）
-    fetchFromGAS(null).then(remote => {
+
+    Promise.all([
+      fetchOrders(),
+      fetchDeletedOrders(),
+    ]).then(([remote, deleted]) => {
       if (remote && remote.length > 0) { setOrders(remote); setLastSync(new Date()) }
+      if (deleted) setDeletedOrders(deleted)
       finishLoading(); clearTimeout(safetyTimer)
     }).catch(() => { finishLoading(); clearTimeout(safetyTimer) })
+
     const timer = setInterval(() => {
-      fetchFromGAS(null).then(remote => {
+      fetchOrders().then(remote => {
         if (remote && remote.length > 0) { setOrders(remote); setLastSync(new Date()) }
       })
     }, 60000)
     return () => clearInterval(timer)
   }, [authed])
 
-  const syncGAS = useCallback(async (o) => {
-    setSyncing(true)
-    await syncToGAS(null, o)
-    setLastSync(new Date())
-    setSyncing(false)
-  }, [])
+  // syncError は5秒で消去
+  useEffect(() => {
+    if (!syncError) return
+    const t = setTimeout(() => setSyncError(''), 5000)
+    return () => clearTimeout(t)
+  }, [syncError])
+
+  function handleLogin(newRole) {
+    setRole(newRole)
+    setAuthed(true)
+  }
+
+  function handleLogout() {
+    clearToken(); clearRoleSession()
+    setAuthed(false); setRole('')
+    setShowSettings(false)
+  }
 
   async function pullFromGAS() {
     setSyncing(true)
-    const remote = await fetchFromGAS(null)
+    const remote = await fetchOrders()
     if (remote) { setOrders(remote); setLastSync(new Date()) }
     setSyncing(false)
   }
 
-  function saveGasUrl(url) {
-    setGasUrl(url)
-    try { localStorage.setItem(GAS_CONFIG_KEY, url) } catch {}
-  }
-
-  function handleLogin() { setAuthed(true) }
-
-  function handleLogout() {
-    clearToken()
-    setAuthed(false)
-    setShowSettings(false)
-  }
-
-  function addOrder(form) {
-    const status = form.isSuginami ? 'suginami' : form.isGuided ? 'guided' : form.isInquiry ? 'inquiry' : 'order'
+  // 新規受注（個別POST → GAS直接書き込み）
+  async function addOrder(form) {
+    const status   = form.isSuginami ? 'suginami' : form.isGuided ? 'guided' : form.isInquiry ? 'inquiry' : 'order'
     const newOrder = { ...form, id: generateId(), status, createdAt: new Date().toISOString() }
-    const next = [newOrder, ...orders]
-    setOrders(next); setShowForm(false); syncGAS(next)
+    setOrders(prev => [newOrder, ...prev])
+    setShowForm(false)
+    const res = await apiCall({ action: 'admin_add_order', ...newOrder })
+    if (res.status !== 'ok') {
+      setSyncError('受注の保存に失敗しました: ' + (res.message || ''))
+      setOrders(prev => prev.filter(o => o.id !== newOrder.id))
+    } else {
+      setLastSync(new Date())
+    }
   }
 
-  function updateOrder(form) {
-    const next = orders.map(o => o.id === editingOrder.id ? { ...o, ...form } : o)
-    setOrders(next); setEditingOrder(null); syncGAS(next)
+  // 受注編集（全フィールド更新）
+  async function updateOrder(form) {
+    const updated = { ...editingOrder, ...form }
+    const prev = orders
+    setOrders(orders.map(o => o.id === editingOrder.id ? updated : o))
+    setEditingOrder(null)
+    const res = await apiCall({ action: 'update_order', id: editingOrder.id, ...form })
+    if (res.status !== 'ok') {
+      setSyncError('編集の保存に失敗しました: ' + (res.message || ''))
+      setOrders(prev)
+    } else {
+      setLastSync(new Date())
+    }
   }
 
-  // 論理削除：削除済みシートに移動
-  function deleteOrder(id) {
+  // 論理削除（個別POST）
+  async function deleteOrder(id) {
     if (!confirm('この受注を削除しますか？\n\n「設定 > 削除済み」から復元できます。')) return
     const target = orders.find(o => o.id === id)
     if (!target) return
-    const deletedEntry = { ...target, deletedAt: new Date().toISOString() }
-    const nextDeleted = [deletedEntry, ...deletedOrders]
-    const next = orders.filter(o => o.id !== id)
-    setOrders(next)
-    setDeletedOrders(nextDeleted)
-    syncGAS(next)
+    const prevOrders  = orders
+    const prevDeleted = deletedOrders
+    setOrders(orders.filter(o => o.id !== id))
+    setDeletedOrders([{ ...target, deletedAt: new Date().toISOString() }, ...deletedOrders])
+    const res = await apiCall({ action: 'delete_order', id })
+    if (res.status !== 'ok') {
+      setSyncError('削除に失敗しました: ' + (res.message || ''))
+      setOrders(prevOrders); setDeletedOrders(prevDeleted)
+    } else {
+      setLastSync(new Date())
+    }
   }
 
-  function cancelOrder(id) {
+  // キャンセル（ステータス変更）
+  async function cancelOrder(id) {
     if (!confirm('この受注をキャンセルにしますか？')) return
-    const next = orders.map(o => o.id === id ? { ...o, status: 'cancelled' } : o)
-    setOrders(next); syncGAS(next)
+    await changeStatus(id, 'cancelled')
   }
 
-  // 復元
-  function restoreOrder(id) {
+  // 復元（個別POST）
+  async function restoreOrder(id) {
     const target = deletedOrders.find(o => o.id === id)
     if (!target) return
     const { deletedAt, ...restored } = target
-    const next = [restored, ...orders]
-    const nextDeleted = deletedOrders.filter(o => o.id !== id)
-    setOrders(next)
-    setDeletedOrders(nextDeleted)
-    syncGAS(next)
+    const prevOrders  = orders
+    const prevDeleted = deletedOrders
+    setOrders([restored, ...orders])
+    setDeletedOrders(deletedOrders.filter(o => o.id !== id))
+    const res = await apiCall({ action: 'restore_order', id })
+    if (res.status !== 'ok') {
+      setSyncError('復元に失敗しました: ' + (res.message || ''))
+      setOrders(prevOrders); setDeletedOrders(prevDeleted)
+    } else {
+      setLastSync(new Date())
+    }
   }
 
-  function changeStatus(id, newStatus) {
-    const next = orders.map(o => o.id === id ? { ...o, status: newStatus } : o)
-    setOrders(next); syncGAS(next)
+  // ステータス変更（個別POST）
+  async function changeStatus(id, newStatus) {
+    const prev = orders
+    setOrders(orders.map(o => o.id === id ? { ...o, status: newStatus } : o))
+    const res = await apiCall({ action: 'update_status', id, status: newStatus })
+    if (res.status !== 'ok') {
+      setSyncError('ステータス更新に失敗しました: ' + (res.message || ''))
+      setOrders(prev)
+    } else {
+      setLastSync(new Date())
+    }
   }
 
   function toggleAlert(alertId)   { setActiveAlert(prev => prev === alertId ? null : alertId); setActiveStatus(null) }
@@ -1042,10 +1088,11 @@ export default function App() {
 
   const totalAlerts = ALERTS.reduce((sum, a) => sum + alertCounts[a.id], 0)
 
-  // 未ログイン
   if (!authed) {
-    return <LoginScreen gasUrl={gasUrl} onLogin={handleLogin} onSetGasUrl={saveGasUrl} />
+    return <LoginScreen onLogin={handleLogin} />
   }
+
+  const hasSettings = can(role, 'settings')
 
   return (
     <>
@@ -1058,16 +1105,33 @@ export default function App() {
             {totalAlerts > 0 && <span className="header-alert-badge">{totalAlerts}件要対応</span>}
           </div>
           <div className="header-right">
+            {/* バージョン・ロール表示 */}
+            <span className="header-version">
+              <span className="version-badge">{APP_VERSION}</span>
+              {role && <span className="role-badge" style={{marginLeft:4}}>{ROLE_LABELS[role] || role}</span>}
+            </span>
             <button className="icon-btn" onClick={pullFromGAS} disabled={syncing} title="今すぐ取得">
               {syncing ? <Loader2 size={16} style={{animation:'spin 1s linear infinite'}} /> : <RefreshCw size={16} />}
             </button>
-            <button className="icon-btn" onClick={() => setShowSettings(true)} title="設定"><Settings size={16} /></button>
-            <div className="new-order-wrap">
-              <button className="btn-primary btn-primary-lg" onClick={() => setShowForm(true)}><Plus size={18} /> 新規受注</button>
-              <div className="sync-info-below">
-                {lastSync ? <>最終同期: {formatDate(lastSync.toISOString())}</> : <span style={{color:'#e67e22'}}>未同期</span>}
+            {hasSettings && (
+              <button className="icon-btn" onClick={() => setShowSettings(true)} title="設定"><Settings size={16} /></button>
+            )}
+            {!hasSettings && (
+              <button className="icon-btn" onClick={handleLogout} title="ログアウト"><LogOut size={16} /></button>
+            )}
+            {can(role, 'add') && (
+              <div className="new-order-wrap">
+                <button className="btn-primary btn-primary-lg" onClick={() => setShowForm(true)}><Plus size={18} /> 新規受注</button>
+                <div className="sync-info-below">
+                  {syncError
+                    ? <span style={{color:'#e74c3c'}}>⚠ {syncError}</span>
+                    : lastSync
+                      ? <>最終同期: {formatDate(lastSync.toISOString())}</>
+                      : <span style={{color:'#e67e22'}}>未同期</span>
+                  }
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </header>
 
@@ -1087,26 +1151,17 @@ export default function App() {
           {STATUSES.filter(s => !['inquiry','guided','suginami','done','cancelled'].includes(s.id)).map(s => (
             <StatusCard key={s.id} status={s} count={counts[s.id]} active={activeStatus === s.id} onClick={() => toggleStatus(s.id)} />
           ))}
-          {/* 完了・キャンセル 縦2分割カード */}
           {(() => {
             const done = STATUSES.find(s => s.id === 'done')
             const cancelled = STATUSES.find(s => s.id === 'cancelled')
             return (
               <div className="status-card-split">
-                <button
-                  className="status-card-split-half top"
-                  style={{ '--card-color': done.color, outline: activeStatus === 'done' ? `2px solid ${done.color}` : 'none' }}
-                  onClick={() => toggleStatus('done')}
-                >
+                <button className="status-card-split-half top" style={{ '--card-color': done.color, outline: activeStatus === 'done' ? `2px solid ${done.color}` : 'none' }} onClick={() => toggleStatus('done')}>
                   <span className="split-icon">{done.icon}</span>
                   <span className="split-label">{done.label}</span>
                   <Badge count={counts['done']} color={done.color} />
                 </button>
-                <button
-                  className="status-card-split-half bottom"
-                  style={{ '--card-color': cancelled.color, outline: activeStatus === 'cancelled' ? `2px solid ${cancelled.color}` : 'none' }}
-                  onClick={() => toggleStatus('cancelled')}
-                >
+                <button className="status-card-split-half bottom" style={{ '--card-color': cancelled.color, outline: activeStatus === 'cancelled' ? `2px solid ${cancelled.color}` : 'none' }} onClick={() => toggleStatus('cancelled')}>
                   <span className="split-icon">{cancelled.icon}</span>
                   <span className="split-label">{cancelled.label}</span>
                   <Badge count={counts['cancelled']} color={cancelled.color} />
@@ -1140,20 +1195,44 @@ export default function App() {
             <div className="empty-state">
               <Key size={40} color="var(--border)" />
               <p>データがありません</p>
-              {!activeStatus && !activeAlert && <button className="btn-primary" style={{marginTop:16}} onClick={() => setShowForm(true)}><Plus size={14}/> 最初の受注を登録</button>}
+              {!activeStatus && !activeAlert && can(role, 'add') && (
+                <button className="btn-primary" style={{marginTop:16}} onClick={() => setShowForm(true)}><Plus size={14}/> 最初の受注を登録</button>
+              )}
             </div>
           )}
-          {filtered.map(o => <OrderCard key={o.id} order={o} onStatusChange={changeStatus} onDelete={deleteOrder} onEdit={o => setEditingOrder(o)} onCancel={cancelOrder} />)}
+          {filtered.map(o => (
+            <OrderCard
+              key={o.id}
+              order={o}
+              onStatusChange={changeStatus}
+              onDelete={deleteOrder}
+              onEdit={o => setEditingOrder(o)}
+              onCancel={cancelOrder}
+              canDelete={can(role, 'delete')}
+              canEdit={can(role, 'edit')}
+            />
+          ))}
         </div>
 
-        {showForm      && <OrderForm onSave={addOrder}  onCancel={() => setShowForm(false)} />}
-        {editingOrder  && <OrderForm initial={editingOrder} onSave={updateOrder} onCancel={() => setEditingOrder(null)} />}
-        {showSettings  && <SettingsModal gasUrl={gasUrl} onSaveGasUrl={saveGasUrl} onClose={() => setShowSettings(false)} onLogout={handleLogout} deletedOrders={deletedOrders} onRestore={restoreOrder} allOrders={orders} />}
+        {showForm     && <OrderForm onSave={addOrder}  onCancel={() => setShowForm(false)} />}
+        {editingOrder && <OrderForm initial={editingOrder} onSave={updateOrder} onCancel={() => setEditingOrder(null)} />}
+        {showSettings && (
+          <SettingsModal
+            role={role}
+            onClose={() => setShowSettings(false)}
+            onLogout={handleLogout}
+            deletedOrders={deletedOrders}
+            onRestore={restoreOrder}
+            allOrders={orders}
+          />
+        )}
       </div>
 
-      <button className="fab-new-order" onClick={() => setShowForm(true)}>
-        <Plus size={20} /> 新規受注
-      </button>
+      {can(role, 'add') && (
+        <button className="fab-new-order" onClick={() => setShowForm(true)}>
+          <Plus size={20} /> 新規受注
+        </button>
+      )}
     </>
   )
 }
