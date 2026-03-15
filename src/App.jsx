@@ -6,8 +6,9 @@ import Loading from './Loading'
 // ============================================================
 // バージョン・定数
 // ============================================================
-const APP_VERSION = 'v2.1.0'
-const WORKER_URL  = 'https://web-order.clh-0556-clh.workers.dev'
+const APP_VERSION  = 'v2.2.0'
+const WORKER_URL   = 'https://web-order.clh-0556-clh.workers.dev'
+const EMAIL_KEY    = 'clh_admin_email'
 
 // ロール定義
 const ROLE_PERMS = {
@@ -111,12 +112,15 @@ const MAKER_PRODUCTS = {
 const SESSION_KEY = 'clh_admin_token'
 const ROLE_KEY    = 'clh_admin_role'
 
-function getToken()        { try { return sessionStorage.getItem(SESSION_KEY) || '' } catch { return '' } }
-function setToken(v)       { try { sessionStorage.setItem(SESSION_KEY, v) } catch {} }
-function clearToken()      { try { sessionStorage.removeItem(SESSION_KEY) } catch {} }
-function getRoleSession()  { try { return sessionStorage.getItem(ROLE_KEY) || '' } catch { return '' } }
-function setRoleSession(v) { try { sessionStorage.setItem(ROLE_KEY, v) } catch {} }
-function clearRoleSession(){ try { sessionStorage.removeItem(ROLE_KEY) } catch {} }
+function getToken()         { try { return sessionStorage.getItem(SESSION_KEY) || '' } catch { return '' } }
+function setToken(v)        { try { sessionStorage.setItem(SESSION_KEY, v) } catch {} }
+function clearToken()       { try { sessionStorage.removeItem(SESSION_KEY) } catch {} }
+function getRoleSession()   { try { return sessionStorage.getItem(ROLE_KEY) || '' } catch { return '' } }
+function setRoleSession(v)  { try { sessionStorage.setItem(ROLE_KEY, v) } catch {} }
+function clearRoleSession() { try { sessionStorage.removeItem(ROLE_KEY) } catch {} }
+function getUserEmail()     { try { return sessionStorage.getItem(EMAIL_KEY) || '' } catch { return '' } }
+function setUserEmail(v)    { try { sessionStorage.setItem(EMAIL_KEY, v) } catch {} }
+function clearUserEmail()   { try { sessionStorage.removeItem(EMAIL_KEY) } catch {} }
 
 async function sha256(message) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(message))
@@ -129,6 +133,8 @@ async function sha256(message) {
 async function apiCall(payload) {
   const token = getToken()
   if (token) payload.token = token
+  const email = getUserEmail()
+  if (email) payload.userEmail = email
   try {
     const res = await fetch(WORKER_URL, {
       method: 'POST',
@@ -224,6 +230,7 @@ function LoginScreen({ onLogin }) {
       if (json.status === 'ok' && json.token) {
         setToken(json.token)
         setRoleSession(json.role || 'staff')
+        setUserEmail(email)
         onLogin(json.role || 'staff')
       } else {
         setErr(json.message || 'メールアドレスまたはパスワードが違います')
@@ -326,7 +333,7 @@ function AlertCard({ alert, count, onClick, active }) {
   )
 }
 
-function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelete, canEdit }) {
+function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelete, canEdit, locks, userEmail, onLock, onUnlock }) {
   const [expanded, setExpanded] = useState(false)
   const st = STATUSES.find(s => s.id === order.status) || STATUSES[1]
   const transitions = STATUS_TRANSITIONS[order.status] || []
@@ -334,14 +341,40 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
   const cardStyle = { '--card-color': st.color, '--card-bg': st.bg }
   const borderStyle = alertInfo ? { border: `2px solid ${alertInfo.borderColor}`, boxShadow: `0 0 10px ${alertInfo.borderColor}40` } : {}
 
+  // ロック状態
+  const lock       = locks && locks[order.id]
+  const isLockedByOther = lock && lock.email !== userEmail
+  const isLockedByMe    = lock && lock.email === userEmail
+
+  function handleExpand() {
+    if (!expanded) {
+      // 展開時にロック取得
+      onLock && onLock(order.id)
+    } else {
+      // 閉じたらロック解除
+      onUnlock && onUnlock(order.id)
+    }
+    setExpanded(e => !e)
+  }
+
   return (
-    <div className="order-card" style={{ ...cardStyle, ...borderStyle }}>
+    <div className="order-card" style={{ ...cardStyle, ...borderStyle, opacity: isLockedByOther ? 0.85 : 1 }}>
       {alertInfo && (
         <div className="alert-banner" style={{ background: alertInfo.color }}>
           <AlertTriangle size={12} /> {alertInfo.label}
         </div>
       )}
-      <div className="order-card-header" onClick={() => setExpanded(e => !e)}>
+      {isLockedByOther && (
+        <div className="alert-banner" style={{ background: '#7f8c8d' }}>
+          🔒 {lock.email} が編集中です
+        </div>
+      )}
+      {isLockedByMe && expanded && (
+        <div className="alert-banner" style={{ background: '#2980b9' }}>
+          ✏️ あなたが編集中
+        </div>
+      )}
+      <div className="order-card-header" onClick={handleExpand}>
         <div className="order-card-left">
           <span className="order-status-dot" style={{ background: st.color }} />
           <div>
@@ -419,7 +452,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
               })}
             </div>
             <div className="card-controls">
-              {canEdit && <button className="ctrl-btn edit" onClick={() => onEdit(order)}>編集</button>}
+              {canEdit && <button className="ctrl-btn edit" onClick={() => onEdit(order)} disabled={isLockedByOther}>編集</button>}
               {order.status !== 'done' && order.status !== 'cancelled' && (
                 <button className="ctrl-btn done" onClick={() => onStatusChange(order.id, 'done')}>✅ 完了</button>
               )}
@@ -759,9 +792,15 @@ function SalesTab({ allOrders, salesFrom, salesTo, setSalesFrom, setSalesTo }) {
 // ユーザー管理タブ（master専用）
 // ============================================================
 function UsersTab() {
-  const [users, setUsers]     = useState([])
-  const [loading, setLoading] = useState(true)
-  const [msg, setMsg]         = useState('')
+  const [users, setUsers]       = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [msg, setMsg]           = useState('')
+  const [msgType, setMsgType]   = useState('ok') // 'ok' | 'err'
+  // 直接追加フォーム
+  const [addEmail, setAddEmail] = useState('')
+  const [addRole,  setAddRole]  = useState('staff')
+  const [addLoading, setAddLoading] = useState(false)
+  const [generatedPass, setGeneratedPass] = useState('')
 
   useEffect(() => {
     apiCall({ action: 'get_users' }).then(res => {
@@ -770,15 +809,32 @@ function UsersTab() {
     })
   }, [])
 
+  function showMsg(text, type = 'ok') {
+    setMsg(text); setMsgType(type)
+    setTimeout(() => setMsg(''), 4000)
+  }
+
+  async function addUser() {
+    if (!addEmail.trim()) { showMsg('メールアドレスを入力してください', 'err'); return }
+    setAddLoading(true); setGeneratedPass('')
+    const res = await apiCall({ action: 'add_user', email: addEmail.trim(), role: addRole })
+    setAddLoading(false)
+    if (res.status === 'ok') {
+      setGeneratedPass(res.password)
+      setUsers(prev => [...prev, { email: addEmail.trim(), role: addRole, approved: 'TRUE', createdAt: new Date().toISOString() }])
+      setAddEmail('')
+      showMsg(addEmail.trim() + ' を追加しました', 'ok')
+    } else {
+      showMsg(res.message || '追加に失敗しました', 'err')
+    }
+  }
+
   async function approve(email, role) {
     const res = await apiCall({ action: 'approve_user', email, role })
     if (res.status === 'ok') {
-      setMsg(email + ' を承認しました')
+      showMsg(email + ' を承認しました')
       setUsers(prev => prev.map(u => u.email === email ? { ...u, approved: 'TRUE', role } : u))
-    } else {
-      setMsg('エラー: ' + (res.message || '失敗'))
-    }
-    setTimeout(() => setMsg(''), 3000)
+    } else { showMsg(res.message || '失敗しました', 'err') }
   }
 
   async function reject(email) {
@@ -786,19 +842,70 @@ function UsersTab() {
     const res = await apiCall({ action: 'reject_user', email })
     if (res.status === 'ok') {
       setUsers(prev => prev.filter(u => u.email !== email))
-      setMsg(email + ' を削除しました')
-    }
-    setTimeout(() => setMsg(''), 3000)
+      showMsg(email + ' を削除しました')
+    } else { showMsg(res.message || '失敗しました', 'err') }
   }
 
-  const pending  = users.filter(u => u.approved !== 'TRUE')
-  const approved = users.filter(u => u.approved === 'TRUE')
+  const pending       = users.filter(u => u.approved !== 'TRUE')
+  const approved      = users.filter(u => u.approved === 'TRUE')
+  const masterCount   = approved.filter(u => u.role === 'master').length + 1 // +1はスクリプトプロパティのmaster
+  const masterMaxed   = masterCount >= 3
 
   if (loading) return <div className="deleted-empty"><Loader2 size={18} style={{animation:'spin 1s linear infinite'}} /> 読み込み中...</div>
 
   return (
     <div className="settings-section">
-      {msg && <div className="settings-save-msg">{msg}</div>}
+      {msg && <div className="settings-save-msg" style={{background: msgType === 'err' ? 'rgba(231,76,60,0.15)' : undefined, color: msgType === 'err' ? '#e74c3c' : undefined}}>{msg}</div>}
+
+      {/* 直接追加フォーム */}
+      <div className="settings-title">➕ ユーザーを直接追加</div>
+      <div style={{display:'flex',gap:8,marginBottom:8,flexWrap:'wrap'}}>
+        <input
+          className="settings-input"
+          style={{flex:'1 1 180px'}}
+          type="email"
+          placeholder="メールアドレス"
+          value={addEmail}
+          onChange={e => setAddEmail(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && addUser()}
+          autoComplete="off"
+        />
+        <select
+          className="settings-input"
+          style={{flex:'0 0 130px'}}
+          value={addRole}
+          onChange={e => setAddRole(e.target.value)}
+        >
+          <option value="staff">スタッフ</option>
+          <option value="sales">売上管理</option>
+          <option value="master" disabled={masterMaxed}>
+            マスター{masterMaxed ? '（上限3人）' : ''}
+          </option>
+        </select>
+        <button className="btn-save" style={{flex:'0 0 80px'}} onClick={addUser} disabled={addLoading}>
+          {addLoading ? <Loader2 size={14} style={{animation:'spin 1s linear infinite'}} /> : '追加'}
+        </button>
+      </div>
+      <p className="settings-desc">パスワードは自動生成（12桁）され画面に1度だけ表示されます。本人への連絡はメールまたは口頭で行ってください。</p>
+
+      {/* 生成パスワード表示 */}
+      {generatedPass && (
+        <div style={{background:'rgba(39,174,96,0.12)',border:'1px solid #27ae60',borderRadius:8,padding:'12px 16px',marginBottom:12}}>
+          <div style={{fontSize:12,color:'#27ae60',marginBottom:4}}>✅ 生成されたパスワード（1度だけ表示）</div>
+          <div style={{fontFamily:'monospace',fontSize:20,fontWeight:700,letterSpacing:3,color:'#fff'}}>{generatedPass}</div>
+          <button
+            style={{marginTop:8,fontSize:12,padding:'4px 12px',background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.2)',borderRadius:4,color:'#fff',cursor:'pointer'}}
+            onClick={() => { navigator.clipboard?.writeText(generatedPass); showMsg('コピーしました') }}
+          >📋 コピー</button>
+        </div>
+      )}
+
+      {/* マスター数表示 */}
+      <div style={{fontSize:12,color:'var(--text-dim)',marginBottom:12}}>
+        マスター: {masterCount}/3人
+      </div>
+
+      {/* 承認待ち */}
       {pending.length > 0 && (
         <>
           <div className="settings-title" style={{color:'#e67e22'}}>⏳ 承認待ち ({pending.length}件)</div>
@@ -809,22 +916,22 @@ function UsersTab() {
                   <div className="deleted-name">{u.email}</div>
                   <div className="deleted-sub">{formatDate(u.createdAt)} 申請</div>
                 </div>
-                <div style={{display:'flex',gap:6}}>
-                  <button className="restore-btn" style={{background:'rgba(39,174,96,0.15)',color:'#27ae60'}}
-                    onClick={() => approve(u.email, 'staff')}><Check size={13}/> 承認(スタッフ)</button>
-                  <button className="restore-btn" style={{background:'rgba(52,152,219,0.15)',color:'#3498db'}}
-                    onClick={() => approve(u.email, 'sales')}><Check size={13}/> 承認(売上)</button>
-                  <button className="restore-btn" style={{background:'rgba(231,76,60,0.15)',color:'#e74c3c'}}
-                    onClick={() => reject(u.email)}><XCircle size={13}/> 却下</button>
+                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                  <button className="restore-btn" style={{background:'rgba(39,174,96,0.15)',color:'#27ae60'}} onClick={() => approve(u.email, 'staff')}><Check size={13}/> スタッフ</button>
+                  <button className="restore-btn" style={{background:'rgba(52,152,219,0.15)',color:'#3498db'}} onClick={() => approve(u.email, 'sales')}><Check size={13}/> 売上管理</button>
+                  {!masterMaxed && <button className="restore-btn" style={{background:'rgba(155,89,182,0.15)',color:'#9b59b6'}} onClick={() => approve(u.email, 'master')}><Check size={13}/> マスター</button>}
+                  <button className="restore-btn" style={{background:'rgba(231,76,60,0.15)',color:'#e74c3c'}} onClick={() => reject(u.email)}><XCircle size={13}/> 却下</button>
                 </div>
               </div>
             ))}
           </div>
         </>
       )}
+
+      {/* 承認済み */}
       {approved.length > 0 && (
         <>
-          <div className="settings-title" style={{marginTop: pending.length > 0 ? 16 : 0}}>✅ 承認済みユーザー ({approved.length}人)</div>
+          <div className="settings-title" style={{marginTop:16}}>✅ 承認済みユーザー ({approved.length}人)</div>
           <div className="deleted-list">
             {approved.map(u => (
               <div key={u.email} className="deleted-row">
@@ -832,14 +939,13 @@ function UsersTab() {
                   <div className="deleted-name">{u.email}</div>
                   <div className="deleted-sub">{ROLE_LABELS[u.role] || u.role} · {formatDate(u.createdAt)} 登録</div>
                 </div>
-                <button className="restore-btn" style={{background:'rgba(231,76,60,0.15)',color:'#e74c3c'}}
-                  onClick={() => reject(u.email)}><XCircle size={13}/> 削除</button>
+                <button className="restore-btn" style={{background:'rgba(231,76,60,0.15)',color:'#e74c3c'}} onClick={() => reject(u.email)}><XCircle size={13}/> 削除</button>
               </div>
             ))}
           </div>
         </>
       )}
-      {users.length === 0 && <div className="deleted-empty">登録ユーザーはいません</div>}
+      {users.length === 0 && pending.length === 0 && <div className="deleted-empty">登録ユーザーはいません</div>}
     </div>
   )
 }
@@ -847,14 +953,39 @@ function UsersTab() {
 // ============================================================
 // 設定モーダル（ロール対応）
 // ============================================================
+const GAS_CONFIG_KEY = 'gas_url'
+
 function SettingsModal({ role, onClose, onLogout, deletedOrders, onRestore, allOrders }) {
-  const defaultTab = can(role, 'users') ? 'users' : can(role, 'sales') ? 'sales' : 'deleted'
+  const defaultTab = role === 'master' ? 'gas' : can(role, 'sales') ? 'sales' : 'deleted'
   const [tab, setTab]             = useState(defaultTab)
   const [salesFrom, setSalesFrom] = useState(() => { const d = new Date(); d.setDate(1); return d.toISOString().slice(0,10) })
   const [salesTo, setSalesTo]     = useState(() => new Date().toISOString().slice(0,10))
   const [saveMsg, setSaveMsg]     = useState('')
 
+  // GASタブ用
+  const [gasUrl, setGasUrl]           = useState(() => { try { return localStorage.getItem(GAS_CONFIG_KEY) || '' } catch { return '' } })
+  const [testStatus, setTestStatus]   = useState('')
+  const [testLoading, setTestLoading] = useState(false)
+
+  function showMsg(msg) { setSaveMsg(msg); setTimeout(() => setSaveMsg(''), 3000) }
+
+  async function testWorker() {
+    setTestLoading(true); setTestStatus('')
+    try {
+      const res = await fetch(WORKER_URL + '?action=ping')
+      const data = await res.json()
+      setTestStatus(data.status === 'ok' ? 'success' : 'error')
+    } catch { setTestStatus('error') }
+    finally { setTestLoading(false) }
+  }
+
+  function saveGasUrl() {
+    try { localStorage.setItem(GAS_CONFIG_KEY, gasUrl) } catch {}
+    showMsg('✅ GAS URLを保存しました')
+  }
+
   const tabs = [
+    role === 'master'     && { id: 'gas',     label: '⚙️ GAS設定' },
     can(role, 'users')    && { id: 'users',   label: '👥 ユーザー' },
     can(role, 'sales')    && { id: 'sales',   label: '📊 売上' },
     can(role, 'restore')  && { id: 'deleted', label: `🗑️ 削除済み${deletedOrders.length > 0 ? ` (${deletedOrders.length})` : ''}` },
@@ -880,6 +1011,30 @@ function SettingsModal({ role, onClose, onLogout, deletedOrders, onRestore, allO
         <div style={{padding:'20px 24px 24px'}}>
           {saveMsg && <div className="settings-save-msg">{saveMsg}</div>}
 
+          {tab === 'gas' && (
+            <div className="settings-section">
+              <div className="settings-title">GAS URL（参照・接続確認用）</div>
+              <p className="settings-desc">実際の通信はCloudflare Worker経由です。このURLは記録・テスト用です。</p>
+              <input
+                value={gasUrl}
+                onChange={e => setGasUrl(e.target.value)}
+                placeholder="https://script.google.com/macros/s/..."
+                className="settings-input"
+                autoComplete="off"
+              />
+              <div style={{display:'flex',gap:8,marginTop:8}}>
+                <button className="btn-cancel" style={{flex:1}} onClick={testWorker} disabled={testLoading}>
+                  {testLoading ? <Loader2 size={14} style={{animation:'spin 1s linear infinite'}} /> : 'Worker接続テスト'}
+                </button>
+                <button className="btn-save" style={{flex:1}} onClick={saveGasUrl}>保存</button>
+              </div>
+              {testStatus === 'success' && <p style={{color:'#27ae60',fontSize:13,marginTop:8}}>✓ Worker接続成功</p>}
+              {testStatus === 'error'   && <p style={{color:'#e74c3c',fontSize:13,marginTop:8}}>✗ 接続失敗</p>}
+              <div style={{marginTop:16,padding:'12px',background:'rgba(255,165,0,0.08)',borderRadius:6,fontSize:12,color:'var(--text-dim)'}}>
+                ℹ️ APIキー・DropboxトークンはCloudflare環境変数で管理。パスワード・ソルトはGASスクリプトプロパティで管理。
+              </div>
+            </div>
+          )}
           {tab === 'users'   && <UsersTab />}
           {tab === 'sales'   && <SalesTab allOrders={allOrders} salesFrom={salesFrom} salesTo={salesTo} setSalesFrom={setSalesFrom} setSalesTo={setSalesTo} />}
           {tab === 'deleted' && (
@@ -929,6 +1084,7 @@ export default function App() {
   const [syncError,    setSyncError]      = useState('')
   const [search,       setSearch]         = useState('')
   const [loading,      setLoading]        = useState(true)
+  const [locks,        setLocks]          = useState({}) // { orderId: { email, lockedAt } }
 
   // 受注データをlocalStorageにキャッシュ
   useEffect(() => { localStorage.setItem('key_orders', JSON.stringify(orders)) }, [orders])
@@ -960,7 +1116,43 @@ export default function App() {
     return () => clearInterval(timer)
   }, [authed])
 
-  // syncError は5秒で消去
+  // ロック状態ポーリング（15秒）
+  useEffect(() => {
+    if (!authed) return
+    const fetchLocks = () => {
+      apiCall({ action: 'get_locks' }).then(res => {
+        if (res.status === 'ok') setLocks(res.locks || {})
+      })
+    }
+    fetchLocks()
+    const t = setInterval(fetchLocks, 15000)
+    return () => clearInterval(t)
+  }, [authed])
+
+  // lock / unlock 関数
+  async function lockOrder(orderId) {
+    await apiCall({ action: 'lock_order', id: orderId })
+    apiCall({ action: 'get_locks' }).then(res => { if (res.status === 'ok') setLocks(res.locks || {}) })
+  }
+  async function unlockOrder(orderId) {
+    await apiCall({ action: 'unlock_order', id: orderId })
+    setLocks(prev => { const n = {...prev}; delete n[orderId]; return n })
+  }
+
+  // ページ離脱時に全ロック解除
+  useEffect(() => {
+    const handleUnload = () => {
+      Object.keys(locks).forEach(id => {
+        if (locks[id]?.email === getUserEmail()) {
+          navigator.sendBeacon && navigator.sendBeacon(WORKER_URL,
+            JSON.stringify({ action: 'unlock_order', id, token: getToken(), userEmail: getUserEmail() })
+          )
+        }
+      })
+    }
+    window.addEventListener('beforeunload', handleUnload)
+    return () => window.removeEventListener('beforeunload', handleUnload)
+  }, [locks])
   useEffect(() => {
     if (!syncError) return
     const t = setTimeout(() => setSyncError(''), 5000)
@@ -973,7 +1165,7 @@ export default function App() {
   }
 
   function handleLogout() {
-    clearToken(); clearRoleSession()
+    clearToken(); clearRoleSession(); clearUserEmail()
     setAuthed(false); setRole('')
     setShowSettings(false)
   }
@@ -1210,6 +1402,10 @@ export default function App() {
               onCancel={cancelOrder}
               canDelete={can(role, 'delete')}
               canEdit={can(role, 'edit')}
+              locks={locks}
+              userEmail={getUserEmail()}
+              onLock={lockOrder}
+              onUnlock={unlockOrder}
             />
           ))}
         </div>
