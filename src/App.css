@@ -1949,3 +1949,310 @@
   margin-top: 2px;
   letter-spacing: 0.5px;
 }
+/* ============================================================
+   モバイル最適化・カード改善 追加CSS
+   App.css の末尾に追記してください
+   ============================================================ */
+
+/* ── カード基本改善 ─────────────────────────── */
+.order-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+}
+
+.order-card-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.order-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.order-amount {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.order-name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  word-break: break-all;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.order-sub {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.order-id-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: monospace;
+  margin-top: 2px;
+}
+
+/* ── ステータスカード スマホ ────────────────── */
+@media (max-width: 600px) {
+  .app {
+    padding: 0 8px 80px;
+  }
+
+  .header {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .header-title {
+    font-size: 14px;
+  }
+
+  .header-version {
+    display: none;
+  }
+
+  .status-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    padding: 8px 0;
+  }
+
+  .status-card {
+    padding: 8px 6px;
+    min-height: 64px;
+  }
+
+  .status-card-icon {
+    font-size: 18px;
+  }
+
+  .status-card-label {
+    font-size: 10px;
+  }
+
+  .status-card-split {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+  }
+
+  .status-card-split-half {
+    flex: 1;
+    padding: 8px 6px;
+  }
+
+  .alert-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .alert-card {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  /* カードリスト */
+  .order-card {
+    margin-bottom: 8px;
+    border-radius: 10px;
+  }
+
+  .order-card-header {
+    padding: 10px 12px;
+  }
+
+  .order-amount {
+    font-size: 14px;
+  }
+
+  .order-name {
+    font-size: 13px;
+  }
+
+  /* 展開部分 */
+  .order-card-body {
+    padding: 10px 12px;
+  }
+
+  .order-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .transition-buttons {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .transition-btn {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  .card-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .ctrl-btn {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  /* 検索バー */
+  .list-toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 0;
+  }
+
+  .search-wrap {
+    flex: 1 1 100%;
+  }
+
+  /* モーダル */
+  .modal {
+    width: 96vw;
+    max-width: 96vw;
+    margin: 16px auto;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-header h2 {
+    font-size: 16px;
+  }
+
+  /* 設定タブ */
+  .settings-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    gap: 4px;
+    padding-bottom: 4px;
+  }
+
+  .settings-tab {
+    white-space: nowrap;
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  /* 新規受注ボタン（FAB） */
+  .fab-new-order {
+    bottom: 20px;
+    right: 16px;
+    font-size: 13px;
+    padding: 12px 18px;
+  }
+
+  /* ヘッダー右側 */
+  .new-order-wrap {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
+  .btn-primary-lg {
+    font-size: 13px;
+    padding: 8px 14px;
+  }
+
+  .sync-info-below {
+    font-size: 10px;
+  }
+
+  /* ログイン画面 */
+  .login-card {
+    width: 92vw;
+    padding: 24px 20px;
+  }
+
+  /* フォームモーダル */
+  .order-form label {
+    font-size: 13px;
+  }
+
+  .maker-tabs {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .maker-tab {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  /* 商品セレクター */
+  .item-add-row {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .product-select {
+    width: 100%;
+  }
+
+  .custom-item-row {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .custom-name-input,
+  .custom-price-input {
+    width: 100%;
+  }
+
+  /* 価格サマリー */
+  .price-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ユーザー管理 */
+  .deleted-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .restore-btn {
+    font-size: 11px;
+  }
+}
+
+/* ── タブレット（601px〜900px）────────────── */
+@media (min-width: 601px) and (max-width: 900px) {
+  .status-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .modal {
+    width: 90vw;
+    max-width: 560px;
+  }
+
+  .order-card-header {
+    padding: 12px 14px;
+  }
+}

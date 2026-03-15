@@ -63,17 +63,17 @@ const MAKERS = [
 const MAKER_PRODUCTS = {
   miwa: [
     { group: '商品', items: [
-      { name: 'TLRS2-K01D',    price: 10050 },
-      { name: 'TLRS2-E01',     price: 15500 },
-      { name: 'TLNT-K(T)02A',  price: 3550  },
-      { name: 'TLNT-K03 (4)A', price: 4200  },
-      { name: 'FKLカード',      price: 3550  },
-      { name: '標準キー',        price: 2000  },
+      { name: 'TLRS2-K01D（Raccessキーヘッド）',       price: 10050 },
+      { name: 'TLRS2-E01（Raccessポップアップキー）',   price: 15500 },
+      { name: 'TLNT-K(T)02A（ノンタッチキーヘッド）',   price: 3550  },
+      { name: 'TLNT-K03 (4)A（彩ノンタッチキーヘッド）', price: 4200  },
+      { name: 'FKLカード',                              price: 3550  },
+      { name: '標準キー',                                price: 2000  },
     ]},
     { group: '作業費・手数料', items: [
-      { name: '出作業費',    price: 12000 },
-      { name: '事務手数料',  price: 1100  },
-      { name: '美和S手数料', price: 2200  },
+      { name: '出作業費',        price: 12000 },
+      { name: '事務手数料',      price: 1100  },
+      { name: '美和サーバー手数料', price: 2200  },
     ]},
   ],
   shibutani: [
@@ -377,14 +377,14 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
       <div className="order-card-header" onClick={handleExpand}>
         <div className="order-card-left">
           <span className="order-status-dot" style={{ background: st.color }} />
-          <div>
+          <div style={{minWidth:0}}>
             <div className="order-name">
               {order.status === 'inquiry' && <span className="inquiry-tag">問合せ</span>}
               {order.maker && <span className="maker-tag">{MAKERS.find(m=>m.id===order.maker)?.label || order.maker}</span>}
-              {order.name}
+              <span style={{wordBreak:'break-all'}}>{order.name}</span>
             </div>
-            <div className="order-sub">{order.mansion} {order.room ? order.room+'号室' : ''}</div>
-            <div className="order-id-label">{order.id}</div>
+            <div className="order-sub" style={{fontSize:12}}>{order.mansion}{order.room ? '　'+order.room+'号室' : ''}</div>
+            {order.phone && <div style={{fontSize:11,color:'var(--text-dim)',marginTop:2}}>{order.phone}</div>}
             {order.items && order.items.length > 0 && (
               <div className="order-items-preview">
                 {order.items.slice(0,2).map(it => (
@@ -395,9 +395,10 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
             )}
           </div>
         </div>
-        <div className="order-card-right">
-          <span className="order-amount">{formatAmount(order.amount)}</span>
-          <ChevronRight size={16} style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', color: 'var(--text-dim)' }} />
+        <div className="order-card-right" style={{flexShrink:0,textAlign:'right'}}>
+          <div className="order-amount">{formatAmount(order.amount)}</div>
+          <div style={{fontSize:10,color:'var(--text-dim)',marginTop:1}}>税込</div>
+          <ChevronRight size={16} style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', color: 'var(--text-dim)', marginTop:4 }} />
         </div>
       </div>
       {expanded && (
