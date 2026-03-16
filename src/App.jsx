@@ -6,7 +6,7 @@ import Loading from './Loading'
 // ============================================================
 // バージョン・定数
 // ============================================================
-const APP_VERSION  = 'v2.2.0'
+const APP_VERSION  = 'v2.3.0'
 const WORKER_URL   = 'https://web-order.clh-0556-clh.workers.dev'
 const EMAIL_KEY    = 'clh_admin_email'
 
@@ -334,27 +334,51 @@ function AlertCard({ alert, count, onClick, active }) {
 }
 
 function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelete, canEdit, locks, userEmail, onLock, onUnlock }) {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded]     = useState(false)
+  const [mailSending, setMailSending] = useState(false)
+  const [mailMsg, setMailMsg]       = useState('')
   const st = STATUSES.find(s => s.id === order.status) || STATUSES[1]
   const transitions = STATUS_TRANSITIONS[order.status] || []
   const alertInfo = getAlertInfo(order)
   const cardStyle = { '--card-color': st.color, '--card-bg': st.bg }
   const borderStyle = alertInfo ? { border: `2px solid ${alertInfo.borderColor}`, boxShadow: `0 0 10px ${alertInfo.borderColor}40` } : {}
 
-  // ロック状態
-  const lock       = locks && locks[order.id]
+  const lock          = locks && locks[order.id]
   const isLockedByOther = lock && lock.email !== userEmail
   const isLockedByMe    = lock && lock.email === userEmail
 
+  // 電話番号フィールドにメアドが含まれているか判定
+  const hasEmail = order.phone && order.phone.includes('@')
+
   function handleExpand() {
-    if (!expanded) {
-      // 展開時にロック取得
-      onLock && onLock(order.id)
-    } else {
-      // 閉じたらロック解除
-      onUnlock && onUnlock(order.id)
-    }
+    if (!expanded) { onLock && onLock(order.id) }
+    else           { onUnlock && onUnlock(order.id) }
     setExpanded(e => !e)
+  }
+
+  async function sendPaymentMail() {
+    if (!hasEmail) return
+    if (!confirm('決済案内メールを送信しますか？\n\n宛先: ' + order.phone)) return
+    setMailSending(true)
+    const res = await apiCall({
+      action:  'send_payment_mail',
+      id:      order.id,
+      email:   order.phone,
+      name:    order.name,
+      mansion: order.mansion,
+      room:    order.room,
+      work:    order.work,
+      items:   order.items || [],
+      amount:  order.amount,
+      paymentUrl: '', // Square実装後にURLを渡す
+    })
+    setMailSending(false)
+    if (res.status === 'ok') {
+      setMailMsg('✅ 送信しました')
+    } else {
+      setMailMsg('❌ ' + (res.message || '送信失敗'))
+    }
+    setTimeout(() => setMailMsg(''), 4000)
   }
 
   return (
@@ -461,6 +485,17 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
                 <button className="ctrl-btn cancel" onClick={() => onCancel(order.id)}>❌ キャンセル</button>
               )}
               {canDelete && <button className="ctrl-btn del" onClick={() => onDelete(order.id)}>削除</button>}
+              {hasEmail && (
+                <button
+                  className="ctrl-btn"
+                  style={{background:'rgba(52,152,219,0.15)',color:'#3498db',borderColor:'rgba(52,152,219,0.3)'}}
+                  onClick={sendPaymentMail}
+                  disabled={mailSending}
+                >
+                  {mailSending ? <Loader2 size={12} style={{animation:'spin 1s linear infinite'}} /> : '📧 決済案内'}
+                </button>
+              )}
+              {mailMsg && <span style={{fontSize:11,color: mailMsg.startsWith('✅') ? '#27ae60' : '#e74c3c'}}>{mailMsg}</span>}
             </div>
           </div>
         </div>
