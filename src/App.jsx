@@ -25,15 +25,15 @@ const ROLE_LABELS = { master: 'マスター', sales: '売上管理', staff: 'ス
 // ステータス・アラート・メーカー定義
 // ============================================================
 const STATUSES = [
-  { id: 'inquiry',   label: 'お問合せ',      color: '#e67e22', bg: 'rgba(230,126,34,0.12)',  icon: '💬' },
-  { id: 'guided',    label: '案内済み',      color: '#d4a017', bg: 'rgba(212,160,23,0.12)',  icon: '📋' },
-  { id: 'suginami',  label: '杉並電話受付',  color: '#1abc9c', bg: 'rgba(26,188,156,0.12)', icon: '🏢' },
-  { id: 'order',     label: '受注',          color: '#ff6b35', bg: 'rgba(255,107,53,0.12)',  icon: '📥' },
-  { id: 'arranged',  label: '手配済み',      color: '#9b59b6', bg: 'rgba(155,89,182,0.12)', icon: '🏭' },
-  { id: 'arrived',   label: '入荷済み',      color: '#3498db', bg: 'rgba(52,152,219,0.12)', icon: '📦' },
-  { id: 'appt',      label: '作業アポ済み',  color: '#27ae60', bg: 'rgba(39,174,96,0.12)',  icon: '📅' },
-  { id: 'done',      label: '完了',          color: '#95a5a6', bg: 'rgba(149,165,166,0.12)', icon: '✅' },
-  { id: 'cancelled', label: 'キャンセル',    color: '#e74c3c', bg: 'rgba(231,76,60,0.12)',  icon: '❌' },
+  { id: 'inquiry',   label: 'お問合せ',      color: '#ff7c1a', bg: 'rgba(255,124,26,0.18)',  icon: '💬' },
+  { id: 'guided',    label: '案内済み',      color: '#ffd000', bg: 'rgba(255,208,0,0.18)',   icon: '📋' },
+  { id: 'suginami',  label: '杉並電話受付',  color: '#00f0c8', bg: 'rgba(0,240,200,0.18)',   icon: '🏢' },
+  { id: 'order',     label: '受注',          color: '#ff5722', bg: 'rgba(255,87,34,0.18)',   icon: '📥' },
+  { id: 'arranged',  label: '手配済み',      color: '#cc66ff', bg: 'rgba(204,102,255,0.18)', icon: '🏭' },
+  { id: 'arrived',   label: '入荷済み',      color: '#2196ff', bg: 'rgba(33,150,255,0.18)',  icon: '📦' },
+  { id: 'appt',      label: '作業アポ済み',  color: '#00e676', bg: 'rgba(0,230,118,0.18)',   icon: '📅' },
+  { id: 'done',      label: '完了',          color: '#ccdde0', bg: 'rgba(204,221,224,0.18)', icon: '✅' },
+  { id: 'cancelled', label: 'キャンセル',    color: '#ff3d33', bg: 'rgba(255,61,51,0.18)',   icon: '❌' },
 ]
 
 const STATUS_TRANSITIONS = {
@@ -269,7 +269,7 @@ function LoginScreen({ onLogin }) {
   return (
     <div className="login-screen">
       <div className="login-card">
-        <div className="login-logo"><Key size={28} color="var(--accent)" /><span>一般受注管理</span></div>
+        <div className="login-logo"><Key size={28} color="var(--accent)" /><span>CLH-Support-Bridge</span></div>
         <div className="login-sub">CARLOCK HOMES ADMIN</div>
 
         {mode === 'login' ? (
@@ -353,8 +353,10 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
   const lock            = locks && locks[order.id]
   const isLockedByOther = lock && lock.email !== userEmail
   const isLockedByMe    = lock && lock.email === userEmail
-  const hasEmail = (order.email && order.email.includes('@')) || (order.phone && order.phone.includes('@'))
-  const customerEmail = (order.email && order.email.includes('@')) ? order.email : order.phone
+  // order.email を優先、旧データで phone に @ が含まれる場合も後方互換対応
+  const customerEmail = (order.email && order.email.includes('@')) ? order.email
+                      : (order.phone && order.phone.includes('@')) ? order.phone : ''
+  const hasEmail = !!customerEmail
 
   // 決済パネルは完了ステータスのみ・全ロール表示
   const showPayButton = order.status === 'done'
@@ -1550,7 +1552,7 @@ export default function App() {
         <header className="header">
           <div className="header-left">
             <Key size={22} color="var(--accent)" />
-            <span className="header-title">一般受注管理</span>
+            <span className="header-title">CLH-Support-Bridge</span>
             {totalAlerts > 0 && <span className="header-alert-badge">{totalAlerts}件要対応</span>}
           </div>
           <div className="header-right">

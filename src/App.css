@@ -84,19 +84,9 @@
    ============================================================ */
 .status-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 10px;
   margin-bottom: 24px;
-}
-
-@media (max-width: 640px) {
-  .status-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  .status-grid > :nth-child(4),
-  .status-grid > :nth-child(5) {
-    grid-column: span 1;
-  }
 }
 
 .status-card {
@@ -303,7 +293,7 @@
 }
 
 .order-name {
-  font-size: 18px;
+  font-size: 26px;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
@@ -311,7 +301,7 @@
 }
 
 .order-sub {
-  font-size: 15px;
+  font-size: 20px;
   color: var(--text-dim);
   margin-top: 2px;
 }
@@ -325,7 +315,7 @@
 
 .order-amount {
   font-family: 'Space Mono', monospace;
-  font-size: 17px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--accent);
 }
@@ -568,11 +558,9 @@
 }
 
 /* ============================================================
-   RESPONSIVE
+   RESPONSIVE（480px以下）
    ============================================================ */
 @media (max-width: 480px) {
-  .header-title { font-size: 15px; }
-  .sync-info { display: none; }
   .order-detail-grid { grid-template-columns: 1fr; }
 }
 
@@ -581,8 +569,8 @@
    ============================================================ */
 .inquiry-tag {
   display: inline-block;
-  background: rgba(230,126,34,0.2);
-  color: #e67e22;
+  background: rgba(255,144,64,0.2);
+  color: #ff9040;
   font-size: 10px;
   font-weight: 700;
   padding: 1px 6px;
@@ -611,6 +599,7 @@
   gap: 8px;
   font-size: 13px !important;
   color: var(--text) !important;
+  font-weight: 600 !important;
   cursor: pointer;
 }
 
@@ -632,34 +621,34 @@
    EXTRA SECTION（その他管理会社）
    ============================================================ */
 .extra-section {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .extra-toggle-btn {
-  width: 100%;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 14px;
-  background: var(--surface2);
-  border: none;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  text-align: left;
   cursor: pointer;
-  transition: color 0.15s;
+  transition: all 0.15s;
 }
-.extra-toggle-btn:hover { color: var(--text); }
+.extra-toggle-btn:hover { color: var(--text); border-color: var(--text-dim); }
 
 .extra-fields {
-  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  border-top: 1px solid var(--border);
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 12px;
   animation: slideDown 0.2s ease;
 }
 
@@ -687,18 +676,6 @@
   margin-right: 4px;
 }
 
-/* ============================================================
-   STATUS GRID 6列対応
-   ============================================================ */
-.status-grid {
-  grid-template-columns: repeat(6, 1fr) !important;
-}
-
-@media (max-width: 700px) {
-  .status-grid {
-    grid-template-columns: repeat(3, 1fr) !important;
-  }
-}
 
 /* ============================================================
    ALERT GRID
@@ -995,101 +972,6 @@
   text-align: right;
 }
 
-/* ============================================================
-   EXTRA SECTION STYLES (already have but ensure)
-   ============================================================ */
-.inquiry-toggle {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-}
-
-.toggle-label {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 13px !important;
-  color: var(--text) !important;
-  font-weight: 600 !important;
-}
-
-.toggle-label input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
-.toggle-note {
-  font-size: 11px;
-  color: var(--text-dim);
-  margin-top: 4px;
-}
-
-.extra-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.extra-toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 12px;
-  color: var(--text-dim);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.extra-toggle-btn:hover { color: var(--text); border-color: var(--text-dim); }
-
-.extra-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: var(--surface2);
-  border-radius: 8px;
-  padding: 12px;
-  animation: slideDown 0.2s ease;
-}
-
-.extra-info {
-  background: var(--surface2);
-  border-radius: 8px;
-  padding: 10px 12px;
-  margin-bottom: 8px;
-}
-
-.extra-info-title {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-dim);
-  margin-bottom: 8px;
-  letter-spacing: 0.5px;
-}
-
-.extra-label {
-  color: var(--text-dim);
-  font-size: 11px;
-  margin-right: 4px;
-}
-
-.inquiry-tag {
-  background: #e67e22;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-right: 6px;
-}
 
 /* ============================================================
    MAKER TABS
@@ -1242,20 +1124,21 @@
     height: 40px;
   }
 
-  /* ステータスグリッド - 3列 */
+  /* ステータスグリッド - スマホは3列 */
   .status-grid {
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    gap: 6px;
     margin-bottom: 12px;
   }
   .status-card {
     padding: 10px 6px;
+    border-radius: 12px;
   }
   .status-card-icon {
-    font-size: 28px;
+    font-size: 26px;
   }
   .status-card-label {
-    font-size: 17px;
+    font-size: 13px;
   }
 
   /* アラートグリッド - 1列 */
@@ -1281,19 +1164,19 @@
   /* 受注カード */
   .order-card {
     border-radius: 12px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
   .order-card-header {
-    padding: 16px 14px;
+    padding: 14px 14px;
   }
   .order-name {
-    font-size: 18px;
+    font-size: 22px;
   }
   .order-sub {
-    font-size: 15px;
+    font-size: 17px;
   }
   .order-amount {
-    font-size: 17px;
+    font-size: 22px;
   }
   .order-card-body {
     padding: 0 14px 14px;
@@ -1435,18 +1318,29 @@
 }
 
 /* ============================================================
+   タブレット最適化（769px〜1023px）
+   ============================================================ */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .app {
+    max-width: 100%;
+    padding: 0 20px 80px;
+  }
+  .status-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+  }
+  .status-card-label {
+    font-size: 14px;
+  }
+}
+
+/* ============================================================
    PC最適化（1024px以上）
    ============================================================ */
 @media (min-width: 1024px) {
   .app {
-    max-width: 1100px;
-    padding: 0 32px 60px;
-  }
-  .status-grid {
-    grid-template-columns: repeat(6, 1fr);
-  }
-  .alert-grid {
-    grid-template-columns: repeat(3, 1fr);
+    max-width: 1200px;
+    padding: 0 40px 60px;
   }
   .order-list {
     display: grid;
@@ -1455,6 +1349,18 @@
   }
   .order-card {
     margin-bottom: 0;
+  }
+  .order-name {
+    font-size: 24px;
+  }
+  .order-sub {
+    font-size: 18px;
+  }
+  .order-amount {
+    font-size: 24px;
+  }
+  .status-card-label {
+    font-size: 15px;
   }
 }
 
@@ -1585,6 +1491,38 @@
   text-align: center;
   padding: 6px;
 }
+.login-ok {
+  font-size: 12px;
+  color: #4ade80;
+  text-align: center;
+  padding: 6px;
+}
+.login-request-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  text-align: center;
+  margin-bottom: 2px;
+}
+.login-request-note {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: center;
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+.login-sub-link {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 12px;
+  text-align: center;
+  cursor: pointer;
+  padding: 4px;
+  text-decoration: underline;
+  transition: color 0.15s;
+}
+.login-sub-link:hover { color: var(--accent); }
 
 /* ============================================================
    設定モーダル
