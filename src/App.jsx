@@ -6,7 +6,7 @@ import Loading from './Loading'
 // ============================================================
 // バージョン・定数
 // ============================================================
-const APP_VERSION  = 'v2.4.0'
+const APP_VERSION  = 'v2.5.0'
 const WORKER_URL   = 'https://web-order.clh-0556-clh.workers.dev'
 const EMAIL_KEY    = 'clh_admin_email'
 
@@ -341,6 +341,8 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
   const [paymentLoading, setPaymentLoading] = useState(false)
   const [paymentMsg, setPaymentMsg]     = useState('')
   const [showPayPanel, setShowPayPanel] = useState(false)
+  const [receiptUrl, setReceiptUrl]     = useState('')
+  const [receiptLoading, setReceiptLoading] = useState(false)
 
   const st = STATUSES.find(s => s.id === order.status) || STATUSES[1]
   const transitions = STATUS_TRANSITIONS[order.status] || []
@@ -353,8 +355,8 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
   const isLockedByMe    = lock && lock.email === userEmail
   const hasEmail        = order.phone && order.phone.includes('@')
 
-  // 決済パネルは完了ステータスのみ表示
-  const showPayButton = order.status === 'done' && can('sales', 'edit')
+  // 決済パネルは完了ステータスのみ・canEditがある場合に表示
+  const showPayButton = order.status === 'done' && (canEdit || canDelete)
 
   function handleExpand() {
     if (!expanded) { onLock && onLock(order.id) }
@@ -404,8 +406,38 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
     window.open('https://line.me/R/msg/text/?' + text, '_blank')
   }
 
-  // メール送信
-  async function sendPaymentMail() {
+  // freee領収書直接発行
+  async function issueFreeeReceipt() {
+    if (!confirm('freeeで領収書を発行しますか？\n\n金額：¥' + Number(order.amount).toLocaleString() + '（税込）')) return
+    setReceiptLoading(true)
+    try {
+      const res = await fetch(WORKER_URL + '/freee/receipt', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id:      order.id,
+          name:    order.name,
+          mansion: order.mansion,
+          room:    order.room,
+          work:    order.work,
+          items:   order.items || [],
+          amount:  order.amount,
+        }),
+      })
+      const data = await res.json()
+      if (data.status === 'ok' && data.receiptUrl) {
+        setReceiptUrl(data.receiptUrl)
+        setPaymentMsg('✅ freeeに領収書を作成しました')
+      } else {
+        setPaymentMsg('❌ ' + (data.message || '発行失敗'))
+      }
+    } catch {
+      setPaymentMsg('❌ 通信エラーが発生しました')
+    } finally {
+      setReceiptLoading(false)
+      setTimeout(() => setPaymentMsg(''), 5000)
+    }
+  }
     if (!hasEmail) return
     if (!confirm('決済案内メールを送信しますか？\n\n宛先: ' + order.phone)) return
     setMailSending(true)
@@ -599,6 +631,33 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
                 >
                   📱 Squareアプリでタッチ決済
                 </button>
+
+                {/* 仕切り */}
+                <div style={{borderTop:'1px solid rgba(255,255,255,0.08)',margin:'10px 0'}} />
+
+                {/* freee領収書直接発行 */}
+                <div style={{fontSize:11,color:'rgba(255,255,255,0.4)',marginBottom:6}}>現金・振込・対面カード決済後</div>
+                <button
+                  className="ctrl-btn"
+                  style={{background:'rgba(0,132,132,0.15)',color:'#00b2b2',borderColor:'rgba(0,178,178,0.3)',width:'100%',justifyContent:'center'}}
+                  onClick={issueFreeeReceipt}
+                  disabled={receiptLoading}
+                >
+                  {receiptLoading
+                    ? <Loader2 size={13} style={{animation:'spin 1s linear infinite'}} />
+                    : '📄 freeeで領収書を発行'}
+                </button>
+
+                {/* 発行済みリンク */}
+                {receiptUrl && (
+                  <button
+                    className="ctrl-btn"
+                    style={{marginTop:6,background:'rgba(0,132,132,0.25)',color:'#00d4d4',borderColor:'rgba(0,212,212,0.3)',width:'100%',justifyContent:'center'}}
+                    onClick={() => window.open(receiptUrl, '_blank')}
+                  >
+                    🔗 freeeで領収書を確認・送付
+                  </button>
+                )}
 
                 {paymentMsg && (
                   <div style={{marginTop:8,fontSize:11,color: paymentMsg.startsWith('✅') ? '#27ae60' : '#e74c3c'}}>
