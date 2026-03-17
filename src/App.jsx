@@ -6,7 +6,7 @@ import Loading from './Loading'
 // ============================================================
 // バージョン・定数
 // ============================================================
-const APP_VERSION  = 'v2.3.0'
+const APP_VERSION  = 'v2.4.0'
 const WORKER_URL   = 'https://web-order.clh-0556-clh.workers.dev'
 const EMAIL_KEY    = 'clh_admin_email'
 
@@ -334,21 +334,27 @@ function AlertCard({ alert, count, onClick, active }) {
 }
 
 function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelete, canEdit, locks, userEmail, onLock, onUnlock }) {
-  const [expanded, setExpanded]     = useState(false)
-  const [mailSending, setMailSending] = useState(false)
-  const [mailMsg, setMailMsg]       = useState('')
+  const [expanded, setExpanded]         = useState(false)
+  const [mailSending, setMailSending]   = useState(false)
+  const [mailMsg, setMailMsg]           = useState('')
+  const [paymentUrl, setPaymentUrl]     = useState('')
+  const [paymentLoading, setPaymentLoading] = useState(false)
+  const [paymentMsg, setPaymentMsg]     = useState('')
+  const [showPayPanel, setShowPayPanel] = useState(false)
+
   const st = STATUSES.find(s => s.id === order.status) || STATUSES[1]
   const transitions = STATUS_TRANSITIONS[order.status] || []
   const alertInfo = getAlertInfo(order)
   const cardStyle = { '--card-color': st.color, '--card-bg': st.bg }
   const borderStyle = alertInfo ? { border: `2px solid ${alertInfo.borderColor}`, boxShadow: `0 0 10px ${alertInfo.borderColor}40` } : {}
 
-  const lock          = locks && locks[order.id]
+  const lock            = locks && locks[order.id]
   const isLockedByOther = lock && lock.email !== userEmail
   const isLockedByMe    = lock && lock.email === userEmail
+  const hasEmail        = order.phone && order.phone.includes('@')
 
-  // 電話番号フィールドにメアドが含まれているか判定
-  const hasEmail = order.phone && order.phone.includes('@')
+  // 決済パネルは完了ステータスのみ表示
+  const showPayButton = order.status === 'done' && can('sales', 'edit')
 
   function handleExpand() {
     if (!expanded) { onLock && onLock(order.id) }
@@ -356,29 +362,69 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
     setExpanded(e => !e)
   }
 
+  // Square決済リンク発行
+  async function generatePaymentLink() {
+    setPaymentLoading(true); setPaymentMsg('')
+    try {
+      const res = await fetch(WORKER_URL + '/square/payment-link', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id:      order.id,
+          name:    order.name,
+          mansion: order.mansion,
+          room:    order.room,
+          work:    order.work,
+          items:   order.items || [],
+          amount:  order.amount,
+        }),
+      })
+      const data = await res.json()
+      if (data.status === 'ok' && data.url) {
+        setPaymentUrl(data.url)
+        setPaymentMsg('✅ 決済リンクを生成しました')
+      } else {
+        setPaymentMsg('❌ ' + (data.message || 'リンク生成失敗'))
+      }
+    } catch {
+      setPaymentMsg('❌ 通信エラーが発生しました')
+    } finally {
+      setPaymentLoading(false)
+    }
+  }
+
+  // LINEで開く
+  function openLine() {
+    const text = encodeURIComponent(
+      order.name + ' 様\n\nカーロックホームズより決済リンクをお送りします。\n\n' +
+      '【注文ID】' + order.id + '\n' +
+      '【金額】¥' + Number(order.amount).toLocaleString() + '（税込）\n\n' +
+      '下記リンクよりお支払い手続きをお願いいたします。\n' + paymentUrl
+    )
+    window.open('https://line.me/R/msg/text/?' + text, '_blank')
+  }
+
+  // メール送信
   async function sendPaymentMail() {
     if (!hasEmail) return
     if (!confirm('決済案内メールを送信しますか？\n\n宛先: ' + order.phone)) return
     setMailSending(true)
     const res = await apiCall({
-      action:  'send_payment_mail',
-      id:      order.id,
-      email:   order.phone,
-      name:    order.name,
-      mansion: order.mansion,
-      room:    order.room,
-      work:    order.work,
-      items:   order.items || [],
-      amount:  order.amount,
-      paymentUrl: '', // Square実装後にURLを渡す
+      action:     'send_payment_mail',
+      id:         order.id,
+      email:      order.phone,
+      name:       order.name,
+      mansion:    order.mansion,
+      room:       order.room,
+      work:       order.work,
+      items:      order.items || [],
+      amount:     order.amount,
+      paymentUrl: paymentUrl,
     })
     setMailSending(false)
-    if (res.status === 'ok') {
-      setMailMsg('✅ 送信しました')
-    } else {
-      setMailMsg('❌ ' + (res.message || '送信失敗'))
-    }
-    setTimeout(() => setMailMsg(''), 4000)
+    if (res.status === 'ok') { setPaymentMsg('✅ メールを送信しました') }
+    else { setPaymentMsg('❌ ' + (res.message || '送信失敗')) }
+    setTimeout(() => setPaymentMsg(''), 4000)
   }
 
   return (
@@ -422,20 +468,6 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
         <div className="order-card-right" style={{flexShrink:0,textAlign:'right'}}>
           <div className="order-amount">{formatAmount(order.amount)}</div>
           <div style={{fontSize:10,color:'var(--text-dim)',marginTop:1}}>税込</div>
-          {(() => {
-            const amt = Number(order.amount) || 0
-            if (!amt) return null
-            const isTaxInc = MAKERS.find(m => m.id === order.maker)?.taxIncluded || false
-            const taxEx = isTaxInc ? amt : Math.round(amt / 1.1)
-            const totalQty = (order.items || []).reduce((s, it) => s + (it.qty || 1), 0)
-            const perUnit = totalQty > 1 ? Math.round(amt / totalQty) : null
-            return (
-              <>
-                <div style={{fontSize:10,color:'var(--text-dim)',marginTop:2}}>税抜 ¥{taxEx.toLocaleString('ja-JP')}</div>
-                {perUnit !== null && <div style={{fontSize:10,color:'var(--text-dim)',marginTop:1}}>1個 ¥{perUnit.toLocaleString('ja-JP')}</div>}
-              </>
-            )
-          })()}
           <ChevronRight size={16} style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', color: 'var(--text-dim)', marginTop:4 }} />
         </div>
       </div>
@@ -499,18 +531,82 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
                 <button className="ctrl-btn cancel" onClick={() => onCancel(order.id)}>❌ キャンセル</button>
               )}
               {canDelete && <button className="ctrl-btn del" onClick={() => onDelete(order.id)}>削除</button>}
-              {hasEmail && (
+              {showPayButton && (
                 <button
                   className="ctrl-btn"
-                  style={{background:'rgba(52,152,219,0.15)',color:'#3498db',borderColor:'rgba(52,152,219,0.3)'}}
-                  onClick={sendPaymentMail}
-                  disabled={mailSending}
+                  style={{background:'rgba(240,165,0,0.15)',color:'#f0a500',borderColor:'rgba(240,165,0,0.3)'}}
+                  onClick={() => setShowPayPanel(v => !v)}
                 >
-                  {mailSending ? <Loader2 size={12} style={{animation:'spin 1s linear infinite'}} /> : '📧 決済案内'}
+                  💳 決済
                 </button>
               )}
-              {mailMsg && <span style={{fontSize:11,color: mailMsg.startsWith('✅') ? '#27ae60' : '#e74c3c'}}>{mailMsg}</span>}
             </div>
+
+            {/* 決済パネル */}
+            {showPayPanel && (
+              <div style={{marginTop:12,padding:'14px 16px',background:'rgba(240,165,0,0.06)',border:'1px solid rgba(240,165,0,0.2)',borderRadius:10}}>
+                <div style={{fontSize:12,fontWeight:700,color:'#f0a500',marginBottom:10}}>💳 決済パネル</div>
+
+                {/* Square決済リンク */}
+                <div style={{marginBottom:10}}>
+                  <button
+                    className="ctrl-btn"
+                    style={{background:'rgba(0,0,0,0.8)',color:'#fff',borderColor:'rgba(255,255,255,0.1)',width:'100%',justifyContent:'center'}}
+                    onClick={generatePaymentLink}
+                    disabled={paymentLoading}
+                  >
+                    {paymentLoading
+                      ? <Loader2 size={13} style={{animation:'spin 1s linear infinite'}} />
+                      : '🔗 Square決済リンクを生成'}
+                  </button>
+                </div>
+
+                {/* 生成済みリンク */}
+                {paymentUrl && (
+                  <div style={{marginBottom:10}}>
+                    <div style={{display:'flex',gap:6,alignItems:'center',background:'rgba(0,0,0,0.15)',borderRadius:8,padding:'8px 10px',marginBottom:8}}>
+                      <span style={{fontSize:10,color:'rgba(255,255,255,0.5)',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',fontFamily:'monospace'}}>{paymentUrl}</span>
+                      <button
+                        style={{flexShrink:0,fontSize:11,padding:'4px 10px',background:'rgba(255,255,255,0.1)',border:'none',borderRadius:6,color:'#fff',cursor:'pointer'}}
+                        onClick={() => { navigator.clipboard?.writeText(paymentUrl); setPaymentMsg('✅ URLをコピーしました') }}
+                      >📋 コピー</button>
+                    </div>
+                    <div style={{display:'flex',gap:6}}>
+                      <button
+                        className="ctrl-btn"
+                        style={{background:'rgba(6,214,160,0.15)',color:'#06d6a0',borderColor:'rgba(6,214,160,0.3)',flex:1,justifyContent:'center'}}
+                        onClick={openLine}
+                      >💬 LINEで送る</button>
+                      {hasEmail && (
+                        <button
+                          className="ctrl-btn"
+                          style={{background:'rgba(52,152,219,0.15)',color:'#3498db',borderColor:'rgba(52,152,219,0.3)',flex:1,justifyContent:'center'}}
+                          onClick={sendPaymentMail}
+                          disabled={mailSending}
+                        >
+                          {mailSending ? <Loader2 size={12} style={{animation:'spin 1s linear infinite'}} /> : '📧 メールで送る'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Squareアプリ起動（タッチ決済） */}
+                <button
+                  className="ctrl-btn"
+                  style={{background:'rgba(255,255,255,0.08)',color:'rgba(255,255,255,0.7)',borderColor:'rgba(255,255,255,0.1)',width:'100%',justifyContent:'center'}}
+                  onClick={() => window.open('square-commerce-v1://payment/create?amount=' + Math.round(Number(order.amount) || 0) + '&currency_code=JPY&description=' + encodeURIComponent(order.id), '_blank')}
+                >
+                  📱 Squareアプリでタッチ決済
+                </button>
+
+                {paymentMsg && (
+                  <div style={{marginTop:8,fontSize:11,color: paymentMsg.startsWith('✅') ? '#27ae60' : '#e74c3c'}}>
+                    {paymentMsg}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1082,6 +1178,19 @@ function SettingsModal({ role, onClose, onLogout, deletedOrders, onRestore, allO
               {testStatus === 'error'   && <p style={{color:'#e74c3c',fontSize:13,marginTop:8}}>✗ 接続失敗</p>}
               <div style={{marginTop:16,padding:'12px',background:'rgba(255,165,0,0.08)',borderRadius:6,fontSize:12,color:'var(--text-dim)'}}>
                 ℹ️ APIキー・DropboxトークンはCloudflare環境変数で管理。パスワード・ソルトはGASスクリプトプロパティで管理。
+              </div>
+
+              {/* freee認証 */}
+              <div style={{marginTop:16}}>
+                <div className="settings-title">freee 連携</div>
+                <p className="settings-desc">Square決済完了後にfreeeへ自動連携するための認証です。初回のみ必要です。</p>
+                <button
+                  className="btn-save"
+                  style={{width:'100%', background:'rgba(0,132,132,0.8)', marginTop:8}}
+                  onClick={() => window.open(WORKER_URL + '/freee/auth', '_blank')}
+                >
+                  🔗 freeeと連携する
+                </button>
               </div>
             </div>
           )}
