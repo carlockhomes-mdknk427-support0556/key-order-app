@@ -355,8 +355,8 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
   const isLockedByMe    = lock && lock.email === userEmail
   const hasEmail        = order.phone && order.phone.includes('@')
 
-  // 決済パネルは完了ステータスのみ・canEditがある場合に表示
-  const showPayButton = order.status === 'done' && (canEdit || canDelete)
+  // 決済パネルは完了ステータスのみ・全ロール表示
+  const showPayButton = order.status === 'done'
 
   function handleExpand() {
     if (!expanded) { onLock && onLock(order.id) }
@@ -438,6 +438,9 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
       setTimeout(() => setPaymentMsg(''), 5000)
     }
   }
+
+  // メール送信
+  async function sendPaymentMail() {
     if (!hasEmail) return
     if (!confirm('決済案内メールを送信しますか？\n\n宛先: ' + order.phone)) return
     setMailSending(true)
