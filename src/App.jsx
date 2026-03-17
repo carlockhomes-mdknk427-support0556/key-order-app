@@ -172,7 +172,7 @@ function getAlertInfo(order) {
 }
 
 const EMPTY_FORM = {
-  name: '', mansion: '', room: '', phone: '', work: '',
+  name: '', mansion: '', room: '', phone: '', email: '', work: '',
   isInquiry: false, isGuided: false, isSuginami: false,
   keyNumber: '', clientName: '', clientPhone: '', clientAddress: '',
   maker: '', items: [], priceOverride: '',
@@ -353,7 +353,8 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
   const lock            = locks && locks[order.id]
   const isLockedByOther = lock && lock.email !== userEmail
   const isLockedByMe    = lock && lock.email === userEmail
-  const hasEmail        = order.phone && order.phone.includes('@')
+  const hasEmail = (order.email && order.email.includes('@')) || (order.phone && order.phone.includes('@'))
+  const customerEmail = (order.email && order.email.includes('@')) ? order.email : order.phone
 
   // 決済パネルは完了ステータスのみ・全ロール表示
   const showPayButton = order.status === 'done'
@@ -417,6 +418,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
         body: JSON.stringify({
           id:      order.id,
           name:    order.name,
+          email:   customerEmail || '',
           mansion: order.mansion,
           room:    order.room,
           work:    order.work,
@@ -442,12 +444,12 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
   // メール送信
   async function sendPaymentMail() {
     if (!hasEmail) return
-    if (!confirm('決済案内メールを送信しますか？\n\n宛先: ' + order.phone)) return
+    if (!confirm('決済案内メールを送信しますか？\n\n宛先: ' + customerEmail)) return
     setMailSending(true)
     const res = await apiCall({
       action:     'send_payment_mail',
       id:         order.id,
-      email:      order.phone,
+      email:      customerEmail,
       name:       order.name,
       mansion:    order.mansion,
       room:       order.room,
@@ -523,11 +525,31 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
                   {order.items.map(item => (
                     <div key={item.name} className="items-detail-row">
                       <span className="items-detail-name">{item.name}</span>
-                      <span className="items-detail-qty">x{item.qty || 1}</span>
-                      <span className="items-detail-price">¥{(item.price * (item.qty || 1)).toLocaleString()}</span>
+                      <span className="items-detail-qty" style={{color:'var(--text-dim)',fontSize:11}}>
+                        ¥{Number(item.price).toLocaleString()} × {item.qty || 1}
+                      </span>
+                      <span className="items-detail-price">= ¥{(item.price * (item.qty || 1)).toLocaleString()}</span>
                     </div>
                   ))}
-                  <div className="items-detail-total">合計: <strong>¥{Number(order.amount).toLocaleString()}</strong></div>
+                  {(() => {
+                    const makerObj = MAKERS.find(m => m.id === order.maker)
+                    const taxIncluded = makerObj?.taxIncluded || false
+                    const subtotal = order.items.reduce((s, it) => s + (it.price * (it.qty || 1)), 0)
+                    const tax = Math.floor(subtotal * 0.1)
+                    const total = Number(order.amount) || subtotal + tax
+                    return (
+                      <div style={{marginTop:6,paddingTop:6,borderTop:'1px solid rgba(255,255,255,0.08)',fontSize:11}}>
+                        {!taxIncluded && (
+                          <div style={{color:'var(--text-dim)',marginBottom:2}}>
+                            税抜き ¥{subtotal.toLocaleString()} ＋ 消費税10% ¥{tax.toLocaleString()}
+                          </div>
+                        )}
+                        <div className="items-detail-total">
+                          税込合計: <strong>¥{total.toLocaleString()}</strong>
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             ) : (
@@ -807,6 +829,7 @@ function OrderForm({ initial, onSave, onCancel }) {
             <label style={{flex:'0 0 120px'}}>部屋番号<input name="room" value={form.room} onChange={handle} placeholder="101" /></label>
           </div>
           <label>電話番号<input name="phone" value={form.phone} onChange={handle} placeholder="090-0000-0000" type="tel" /></label>
+          <label>メールアドレス<span style={{fontSize:10,color:'var(--text-dim)',marginLeft:6}}>任意・決済案内メール送付に使用</span><input name="email" value={form.email||''} onChange={handle} placeholder="example@email.com" type="email" autoComplete="email" /></label>
           <label>作業内容<textarea name="work" value={form.work} onChange={handle} placeholder="作業内容を入力..." rows={2} /></label>
           <div className="form-section-title">メーカー・商品選択</div>
           <div className="maker-tabs">
