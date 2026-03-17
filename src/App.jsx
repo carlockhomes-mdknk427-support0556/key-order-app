@@ -422,6 +422,20 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
         <div className="order-card-right" style={{flexShrink:0,textAlign:'right'}}>
           <div className="order-amount">{formatAmount(order.amount)}</div>
           <div style={{fontSize:10,color:'var(--text-dim)',marginTop:1}}>税込</div>
+          {(() => {
+            const amt = Number(order.amount) || 0
+            if (!amt) return null
+            const isTaxInc = MAKERS.find(m => m.id === order.maker)?.taxIncluded || false
+            const taxEx = isTaxInc ? amt : Math.round(amt / 1.1)
+            const totalQty = (order.items || []).reduce((s, it) => s + (it.qty || 1), 0)
+            const perUnit = totalQty > 1 ? Math.round(amt / totalQty) : null
+            return (
+              <>
+                <div style={{fontSize:10,color:'var(--text-dim)',marginTop:2}}>税抜 ¥{taxEx.toLocaleString('ja-JP')}</div>
+                {perUnit !== null && <div style={{fontSize:10,color:'var(--text-dim)',marginTop:1}}>1個 ¥{perUnit.toLocaleString('ja-JP')}</div>}
+              </>
+            )
+          })()}
           <ChevronRight size={16} style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', color: 'var(--text-dim)', marginTop:4 }} />
         </div>
       </div>
