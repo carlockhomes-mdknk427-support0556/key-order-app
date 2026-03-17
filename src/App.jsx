@@ -1334,6 +1334,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('key_orders', JSON.stringify(orders)) }, [orders])
 
   // ログイン後：GASからデータ取得（60秒ポーリング）
+  // 編集中はポーリングをスキップして編集画面が閉じないようにする
   useEffect(() => {
     if (!authed) { setLoading(false); return }
     const startTime = Date.now()
@@ -1353,22 +1354,34 @@ export default function App() {
     }).catch(() => { finishLoading(); clearTimeout(safetyTimer) })
 
     const timer = setInterval(() => {
-      fetchOrders().then(remote => {
-        if (remote && remote.length > 0) { setOrders(remote); setLastSync(new Date()) }
+      // 編集中・フォーム表示中はポーリングをスキップ
+      setEditingOrder(current => {
+        if (current) return current // 編集中はスキップ
+        fetchOrders().then(remote => {
+          if (remote && remote.length > 0) { setOrders(remote); setLastSync(new Date()) }
+        })
+        return current
       })
     }, 60000)
     return () => clearInterval(timer)
   }, [authed])
 
-  // ロック状態ポーリング（15秒）
+  // ロック状態ポーリング（15秒）編集中はスキップ
   useEffect(() => {
     if (!authed) return
     const fetchLocks = () => {
-      apiCall({ action: 'get_locks' }).then(res => {
-        if (res.status === 'ok') setLocks(res.locks || {})
+      setEditingOrder(current => {
+        if (current) return current // 編集中はスキップ
+        apiCall({ action: 'get_locks' }).then(res => {
+          if (res.status === 'ok') setLocks(res.locks || {})
+        })
+        return current
       })
     }
-    fetchLocks()
+    // 初回は即実行
+    apiCall({ action: 'get_locks' }).then(res => {
+      if (res.status === 'ok') setLocks(res.locks || {})
+    })
     const t = setInterval(fetchLocks, 15000)
     return () => clearInterval(t)
   }, [authed])
