@@ -98,7 +98,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s;
+  transition: all 0.32s cubic-bezier(0.25,0.46,0.45,0.94);
   position: relative;
   overflow: hidden;
 }
@@ -423,18 +423,22 @@
 .modal {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 20px;
   width: 100%;
-  max-width: 500px;
+  max-width: 700px;
   max-height: 90vh;
   overflow-y: auto;
-  animation: modalIn 0.2s ease;
+  animation: modalIn 0.38s cubic-bezier(0.25,0.46,0.45,0.94);
 }
 
 @keyframes modalIn {
-  from { opacity: 0; transform: scale(0.95) translateY(10px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from { opacity: 0; transform: scale(0.92) translateY(16px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
 }
+
+/* 決済モーダル */
+.pay-modal { max-width: 480px; }
+.pay-modal-overlay { z-index: 1100; }
 
 .modal-header {
   display: flex;
@@ -467,10 +471,32 @@
    FORM
    ============================================================ */
 .order-form {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
   padding: 20px 24px 24px;
+}
+
+/* 1カラム全幅にすべき要素 */
+.order-form > .inquiry-toggle,
+.order-form > .form-section-title,
+.order-form > .maker-tabs,
+.order-form > .maker-hint,
+.order-form > .keynumber-section,
+.order-form > .price-summary,
+.order-form > .extra-section,
+.order-form > .form-buttons,
+.order-form > .form-row,
+.order-form > label:first-of-type,
+.order-form > label:has(textarea) {
+  grid-column: 1 / -1;
+}
+
+/* 名前・作業内容・メールは全幅 */
+.order-form > label:has(input[name="name"]),
+.order-form > label:has(textarea[name="work"]),
+.order-form > label:has(input[name="email"]) {
+  grid-column: 1 / -1;
 }
 
 .order-form label {
@@ -1124,21 +1150,42 @@
     height: 40px;
   }
 
-  /* ステータスグリッド - スマホは3列 */
+  /* ステータスグリッド - スマホは3列・均一高さ */
   .status-grid {
     grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: 1fr;
     gap: 6px;
     margin-bottom: 12px;
   }
   .status-card {
     padding: 10px 6px;
     border-radius: 12px;
+    min-height: 80px;
+    height: 100%;
+  }
+  .status-card-group {
+    display: contents;
+  }
+  .status-card-group .status-card {
+    min-height: 80px;
   }
   .status-card-icon {
-    font-size: 26px;
+    font-size: 22px;
   }
   .status-card-label {
-    font-size: 13px;
+    font-size: 11px;
+  }
+  .status-card-split {
+    grid-column: span 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 80px;
+  }
+  .status-card-split-half {
+    flex: 1;
+    min-height: 0;
+    padding: 6px 4px;
   }
 
   /* アラートグリッド - 1列 */
@@ -1196,21 +1243,25 @@
   .modal {
     max-width: 100% !important;
     margin: 0;
-    border-radius: 20px 20px 0 0;
+    border-radius: 24px 24px 0 0;
     max-height: 92vh;
     overflow-y: auto;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    animation: slideUp 0.25s ease;
+    animation: slideUp 0.38s cubic-bezier(0.25,0.46,0.45,0.94);
   }
   .modal-overlay {
     align-items: flex-end;
   }
+  .pay-modal {
+    max-width: 100% !important;
+    border-radius: 24px 24px 0 0;
+  }
   @keyframes slideUp {
-    from { transform: translateY(100%); }
-    to   { transform: translateY(0); }
+    from { transform: translateY(100%); opacity: 0.6; }
+    to   { transform: translateY(0);    opacity: 1; }
   }
   .modal-header {
     padding: 16px 20px 12px;
@@ -1230,8 +1281,10 @@
     margin: 0 auto 12px;
   }
   .order-form {
+    grid-template-columns: 1fr;
     padding: 12px 20px 20px;
   }
+  .order-form > * { grid-column: 1 / -1; }
   .order-form label {
     font-size: 13px;
   }

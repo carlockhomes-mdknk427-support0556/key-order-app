@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Key, Plus, X, ChevronRight, Phone, Building2, FileText, JapaneseYen, ArrowRight, Loader2, RefreshCw, Settings, Search, AlertTriangle, LogOut, RotateCcw, Lock, Users, Check, XCircle } from 'lucide-react'
+import { Key, Plus, X, ChevronRight, Phone, Building2, FileText, JapaneseYen, ArrowRight, Loader2, RefreshCw, Settings, Search, AlertTriangle, LogOut, RotateCcw, Lock, Users, Check, XCircle, Mail } from 'lucide-react'
 import './App.css'
 import Loading from './Loading'
 
@@ -439,7 +439,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
       setPaymentMsg('❌ 通信エラーが発生しました')
     } finally {
       setReceiptLoading(false)
-      setTimeout(() => setPaymentMsg(''), 5000)
+      setTimeout(() => setPaymentMsg(''), 10000)
     }
   }
 
@@ -463,10 +463,11 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
     setMailSending(false)
     if (res.status === 'ok') { setPaymentMsg('✅ メールを送信しました') }
     else { setPaymentMsg('❌ ' + (res.message || '送信失敗')) }
-    setTimeout(() => setPaymentMsg(''), 4000)
+    setTimeout(() => setPaymentMsg(''), 10000)
   }
 
   return (
+    <>
     <div className="order-card" style={{ ...cardStyle, ...borderStyle, opacity: isLockedByOther ? 0.85 : 1 }}>
       {alertInfo && (
         <div className="alert-banner" style={{ background: alertInfo.color }}>
@@ -494,14 +495,6 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
             </div>
             <div className="order-sub" style={{fontSize:12}}>{order.mansion}{order.room ? '　'+order.room+'号室' : ''}</div>
             {order.phone && <div style={{fontSize:11,color:'var(--text-dim)',marginTop:2}}>{order.phone}</div>}
-            {order.items && order.items.length > 0 && (
-              <div className="order-items-preview">
-                {order.items.slice(0,2).map(it => (
-                  <span key={it.name} className="preview-chip">{it.name}{it.qty > 1 ? ` x${it.qty}` : ''}</span>
-                ))}
-                {order.items.length > 2 && <span className="preview-chip preview-chip-more">+{order.items.length - 2}件</span>}
-              </div>
-            )}
           </div>
         </div>
         <div className="order-card-right" style={{flexShrink:0,textAlign:'right'}}>
@@ -514,6 +507,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
         <div className="order-card-body">
           <div className="order-detail-grid">
             <div className="detail-row"><Phone size={13} /><span>{order.phone || '—'}</span></div>
+            {customerEmail && <div className="detail-row"><Mail size={13} /><span style={{wordBreak:'break-all'}}>{customerEmail}</span></div>}
             <div className="detail-row"><Building2 size={13} /><span>{order.mansion} {order.room ? order.room+'号室' : ''}</span></div>
             <div className="detail-row"><FileText size={13} /><span>{order.work || '—'}</span></div>
             {order.items && order.items.length > 0 ? (
@@ -594,109 +588,87 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
                 <button
                   className="ctrl-btn"
                   style={{background:'rgba(240,165,0,0.15)',color:'#f0a500',borderColor:'rgba(240,165,0,0.3)'}}
-                  onClick={() => setShowPayPanel(v => !v)}
+                  onClick={() => setShowPayPanel(true)}
                 >
                   💳 決済
                 </button>
               )}
             </div>
-
-            {/* 決済パネル */}
-            {showPayPanel && (
-              <div style={{marginTop:12,padding:'14px 16px',background:'rgba(240,165,0,0.06)',border:'1px solid rgba(240,165,0,0.2)',borderRadius:10}}>
-                <div style={{fontSize:12,fontWeight:700,color:'#f0a500',marginBottom:10}}>💳 決済パネル</div>
-
-                {/* Square決済リンク */}
-                <div style={{marginBottom:10}}>
-                  <button
-                    className="ctrl-btn"
-                    style={{background:'rgba(0,0,0,0.8)',color:'#fff',borderColor:'rgba(255,255,255,0.1)',width:'100%',justifyContent:'center'}}
-                    onClick={generatePaymentLink}
-                    disabled={paymentLoading}
-                  >
-                    {paymentLoading
-                      ? <Loader2 size={13} style={{animation:'spin 1s linear infinite'}} />
-                      : '🔗 Square決済リンクを生成'}
-                  </button>
-                </div>
-
-                {/* 生成済みリンク */}
-                {paymentUrl && (
-                  <div style={{marginBottom:10}}>
-                    <div style={{display:'flex',gap:6,alignItems:'center',background:'rgba(0,0,0,0.15)',borderRadius:8,padding:'8px 10px',marginBottom:8}}>
-                      <span style={{fontSize:10,color:'rgba(255,255,255,0.5)',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',fontFamily:'monospace'}}>{paymentUrl}</span>
-                      <button
-                        style={{flexShrink:0,fontSize:11,padding:'4px 10px',background:'rgba(255,255,255,0.1)',border:'none',borderRadius:6,color:'#fff',cursor:'pointer'}}
-                        onClick={() => { navigator.clipboard?.writeText(paymentUrl); setPaymentMsg('✅ URLをコピーしました') }}
-                      >📋 コピー</button>
-                    </div>
-                    <div style={{display:'flex',gap:6}}>
-                      <button
-                        className="ctrl-btn"
-                        style={{background:'rgba(6,214,160,0.15)',color:'#06d6a0',borderColor:'rgba(6,214,160,0.3)',flex:1,justifyContent:'center'}}
-                        onClick={openLine}
-                      >💬 LINEで送る</button>
-                      {hasEmail && (
-                        <button
-                          className="ctrl-btn"
-                          style={{background:'rgba(52,152,219,0.15)',color:'#3498db',borderColor:'rgba(52,152,219,0.3)',flex:1,justifyContent:'center'}}
-                          onClick={sendPaymentMail}
-                          disabled={mailSending}
-                        >
-                          {mailSending ? <Loader2 size={12} style={{animation:'spin 1s linear infinite'}} /> : '📧 メールで送る'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Squareアプリ起動（タッチ決済） */}
-                <button
-                  className="ctrl-btn"
-                  style={{background:'rgba(255,255,255,0.08)',color:'rgba(255,255,255,0.7)',borderColor:'rgba(255,255,255,0.1)',width:'100%',justifyContent:'center'}}
-                  onClick={() => window.open('square-commerce-v1://payment/create?amount=' + Math.round(Number(order.amount) || 0) + '&currency_code=JPY&description=' + encodeURIComponent(order.id), '_blank')}
-                >
-                  📱 Squareアプリでタッチ決済
-                </button>
-
-                {/* 仕切り */}
-                <div style={{borderTop:'1px solid rgba(255,255,255,0.08)',margin:'10px 0'}} />
-
-                {/* freee領収書直接発行 */}
-                <div style={{fontSize:11,color:'rgba(255,255,255,0.4)',marginBottom:6}}>現金・振込・対面カード決済後</div>
-                <button
-                  className="ctrl-btn"
-                  style={{background:'rgba(0,132,132,0.15)',color:'#00b2b2',borderColor:'rgba(0,178,178,0.3)',width:'100%',justifyContent:'center'}}
-                  onClick={issueFreeeReceipt}
-                  disabled={receiptLoading}
-                >
-                  {receiptLoading
-                    ? <Loader2 size={13} style={{animation:'spin 1s linear infinite'}} />
-                    : '📄 freeeで領収書を発行'}
-                </button>
-
-                {/* 発行済みリンク */}
-                {receiptUrl && (
-                  <button
-                    className="ctrl-btn"
-                    style={{marginTop:6,background:'rgba(0,132,132,0.25)',color:'#00d4d4',borderColor:'rgba(0,212,212,0.3)',width:'100%',justifyContent:'center'}}
-                    onClick={() => window.open(receiptUrl, '_blank')}
-                  >
-                    🔗 freeeで領収書を確認・送付
-                  </button>
-                )}
-
-                {paymentMsg && (
-                  <div style={{marginTop:8,fontSize:11,color: paymentMsg.startsWith('✅') ? '#27ae60' : '#e74c3c'}}>
-                    {paymentMsg}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
       )}
     </div>
+
+      {/* 決済モーダル */}
+      {showPayPanel && (
+        <div className="modal-overlay pay-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowPayPanel(false) }}>
+          <div className="modal pay-modal">
+            <div className="modal-header">
+              <h2>💳 {order.name} 様 — 決済</h2>
+              <button className="modal-close" onClick={() => setShowPayPanel(false)}><X size={20} /></button>
+            </div>
+            <div style={{padding:'16px 20px 28px',display:'flex',flexDirection:'column',gap:12}}>
+
+              {/* Square決済リンク */}
+              <button
+                className="ctrl-btn"
+                style={{background:'rgba(0,0,0,0.6)',color:'#fff',borderColor:'rgba(255,255,255,0.15)',width:'100%',justifyContent:'center',padding:'12px 0'}}
+                onClick={generatePaymentLink}
+                disabled={paymentLoading}
+              >
+                {paymentLoading ? <Loader2 size={14} style={{animation:'spin 1s linear infinite'}} /> : '🔗 Square決済リンクを生成'}
+              </button>
+
+              {paymentUrl && (
+                <>
+                  <div style={{display:'flex',gap:6,alignItems:'center',background:'rgba(0,0,0,0.2)',borderRadius:8,padding:'8px 10px'}}>
+                    <span style={{fontSize:10,color:'rgba(255,255,255,0.5)',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',fontFamily:'monospace'}}>{paymentUrl}</span>
+                    <button style={{flexShrink:0,fontSize:11,padding:'4px 10px',background:'rgba(255,255,255,0.1)',border:'none',borderRadius:6,color:'#fff',cursor:'pointer'}}
+                      onClick={() => { navigator.clipboard?.writeText(paymentUrl); setPaymentMsg('✅ URLをコピーしました') }}>📋 コピー</button>
+                  </div>
+                  <div style={{display:'flex',gap:8}}>
+                    <button className="ctrl-btn" style={{background:'rgba(6,214,160,0.15)',color:'#06d6a0',borderColor:'rgba(6,214,160,0.3)',flex:1,justifyContent:'center'}} onClick={openLine}>💬 LINEで送る</button>
+                    {hasEmail && (
+                      <button className="ctrl-btn" style={{background:'rgba(52,152,219,0.15)',color:'#3498db',borderColor:'rgba(52,152,219,0.3)',flex:1,justifyContent:'center'}} onClick={sendPaymentMail} disabled={mailSending}>
+                        {mailSending ? <Loader2 size={12} style={{animation:'spin 1s linear infinite'}} /> : '📧 メールで送る'}
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+
+              <button
+                className="ctrl-btn"
+                style={{background:'rgba(255,255,255,0.07)',color:'rgba(255,255,255,0.7)',borderColor:'rgba(255,255,255,0.1)',width:'100%',justifyContent:'center',padding:'12px 0'}}
+                onClick={() => window.open('square-commerce-v1://payment/create?amount=' + Math.round(Number(order.amount)||0) + '&currency_code=JPY&description=' + encodeURIComponent(order.id), '_blank')}
+              >📱 Squareアプリでタッチ決済</button>
+
+              <div style={{borderTop:'1px solid rgba(255,255,255,0.08)',paddingTop:12}}>
+                <div style={{fontSize:11,color:'rgba(255,255,255,0.35)',marginBottom:8}}>現金・振込・対面カード決済後</div>
+                <button
+                  className="ctrl-btn"
+                  style={{background:'rgba(0,132,132,0.15)',color:'#00b2b2',borderColor:'rgba(0,178,178,0.3)',width:'100%',justifyContent:'center',padding:'12px 0'}}
+                  onClick={issueFreeeReceipt} disabled={receiptLoading}
+                >
+                  {receiptLoading ? <Loader2 size={14} style={{animation:'spin 1s linear infinite'}} /> : '📄 freeeで領収書を発行'}
+                </button>
+                {receiptUrl && (
+                  <button className="ctrl-btn" style={{marginTop:8,background:'rgba(0,132,132,0.25)',color:'#00d4d4',borderColor:'rgba(0,212,212,0.3)',width:'100%',justifyContent:'center'}} onClick={() => window.open(receiptUrl,'_blank')}>
+                    🔗 freeeで領収書を確認・送付
+                  </button>
+                )}
+              </div>
+
+              {paymentMsg && (
+                <div style={{fontSize:12,fontWeight:600,padding:'8px 12px',borderRadius:8,background: paymentMsg.startsWith('✅') ? 'rgba(39,174,96,0.15)' : 'rgba(231,76,60,0.15)', color: paymentMsg.startsWith('✅') ? '#2ecc71' : '#e74c3c'}}>
+                  {paymentMsg}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
@@ -1044,7 +1016,7 @@ function UsersTab() {
 
   function showMsg(text, type = 'ok') {
     setMsg(text); setMsgType(type)
-    setTimeout(() => setMsg(''), 4000)
+    setTimeout(() => setMsg(''), 10000)
   }
 
   async function addUser() {
@@ -1200,7 +1172,7 @@ function SettingsModal({ role, onClose, onLogout, deletedOrders, onRestore, allO
   const [testStatus, setTestStatus]   = useState('')
   const [testLoading, setTestLoading] = useState(false)
 
-  function showMsg(msg) { setSaveMsg(msg); setTimeout(() => setSaveMsg(''), 3000) }
+  function showMsg(msg) { setSaveMsg(msg); setTimeout(() => setSaveMsg(''), 10000) }
 
   async function testWorker() {
     setTestLoading(true); setTestStatus('')
@@ -1414,7 +1386,7 @@ export default function App() {
   }, [locks])
   useEffect(() => {
     if (!syncError) return
-    const t = setTimeout(() => setSyncError(''), 5000)
+    const t = setTimeout(() => setSyncError(''), 10000)
     return () => clearTimeout(t)
   }, [syncError])
 
