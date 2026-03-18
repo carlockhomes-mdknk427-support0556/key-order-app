@@ -1350,7 +1350,7 @@ export default function App() {
       fetchOrders(),
       fetchDeletedOrders(),
     ]).then(([remote, deleted]) => {
-      if (remote && remote.length > 0) { setOrders(remote); setLastSync(new Date()) }
+      if (remote !== null) { if (remote.length > 0) setOrders(remote); setLastSync(new Date()) }
       if (deleted) setDeletedOrders(deleted)
       finishLoading(); clearTimeout(safetyTimer)
     }).catch(() => { finishLoading(); clearTimeout(safetyTimer) })
@@ -1360,7 +1360,7 @@ export default function App() {
       setEditingOrder(current => {
         if (current) return current // 編集中はスキップ
         fetchOrders().then(remote => {
-          if (remote && remote.length > 0) { setOrders(remote); setLastSync(new Date()) }
+          if (remote !== null) { if (remote.length > 0) setOrders(remote); setLastSync(new Date()) }
         })
         return current
       })
