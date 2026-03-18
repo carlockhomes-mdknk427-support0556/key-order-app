@@ -36,7 +36,7 @@
   --font-mono:  'DM Mono', monospace;
 }
 
-html { font-size: 17px; }
+html { font-size: 18px; }
 
 body {
   font-family: var(--font-body);
@@ -237,12 +237,12 @@ body {
 .stat-icon { font-size: 20px; display: block; margin-bottom: 8px; }
 .stat-num {
   font-family: var(--font-head);
-  font-size: 30px;
+  font-size: 36px;
   font-weight: 700;
   color: var(--text1);
   line-height: 1;
 }
-.stat-label { font-size: 13px; color: var(--text2); margin-top: 4px; font-weight: 500; }
+.stat-label { font-size: 15px; color: var(--text2); margin-top: 5px; font-weight: 500; }
 
 /* ── ステータスグループカード ─────────── */
 .stat-group {
@@ -285,12 +285,12 @@ body {
 .stat-group-btn .stat-icon { font-size: 16px; display: block; margin-bottom: 4px; }
 .stat-group-btn .stat-num {
   font-family: var(--font-head);
-  font-size: 24px;
+  font-size: 30px;
   font-weight: 700;
   color: var(--text1);
   line-height: 1;
 }
-.stat-group-btn .stat-label { font-size: 11px; color: var(--text2); margin-top: 3px; font-weight: 500; }
+.stat-group-btn .stat-label { font-size: 13px; color: var(--text2); margin-top: 4px; font-weight: 500; }
 
 /* ── アラートチップ ────────────────────── */
 .alert-chips {
@@ -443,7 +443,7 @@ body {
 }
 .card-info-v3 { flex: 1; min-width: 0; }
 .card-name-v3 {
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--text1);
   display: flex;
@@ -474,7 +474,7 @@ body {
   border: 1px solid rgba(230,126,34,0.18);
 }
 .card-sub-v3 {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--text2);
   margin-top: 3px;
 }
@@ -508,7 +508,7 @@ body {
 }
 .card-amount-v3 {
   font-family: var(--font-head);
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--gold);
   line-height: 1;
@@ -549,8 +549,8 @@ body {
   border: 1px solid var(--border2);
   border-radius: 20px;
   width: 100%;
-  max-width: 800px;
-  max-height: 92vh;
+  max-width: 1060px;
+  max-height: 70vh;
   overflow-y: auto;
   box-shadow: 0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
   animation: fullscreenIn 0.4s cubic-bezier(0.16,1,0.3,1) forwards;
@@ -567,9 +567,9 @@ body {
   border-radius: 20px 20px 0 0;
   z-index: 1;
 }
-.card-fullscreen-top .card-name-v3 { font-size: 22px; font-weight: 700; }
-.card-fullscreen-top .card-sub-v3 { font-size: 16px; }
-.card-fullscreen-top .card-amount-v3 { font-size: 28px; }
+.card-fullscreen-top .card-name-v3 { font-size: 28px; font-weight: 700; }
+.card-fullscreen-top .card-sub-v3 { font-size: 18px; }
+.card-fullscreen-top .card-amount-v3 { font-size: 34px; }
 .card-fullscreen-close {
   width: 40px; height: 40px;
   border-radius: 12px;
@@ -585,11 +585,18 @@ body {
 
 .card-fullscreen .card-body-v3 { padding: 24px 28px 28px; }
 .card-fullscreen .detail-grid-v3 { gap: 12px; }
-.card-fullscreen .detail-val-v3 { font-size: 16px; }
-.card-fullscreen .detail-key-v3 { font-size: 12px; }
-.card-fullscreen .trans-btn-v3 { font-size: 16px; padding: 12px 22px; }
-.card-fullscreen .ctrl-btn-v3 { font-size: 15px; padding: 12px 20px; }
+.card-fullscreen .detail-val-v3 { font-size: 18px; }
+.card-fullscreen .detail-key-v3 { font-size: 13px; }
+.card-fullscreen .trans-btn-v3 { font-size: 18px; padding: 14px 26px; }
+.card-fullscreen .ctrl-btn-v3 { font-size: 17px; padding: 13px 22px; }
 .card-fullscreen .card-actions-v3 { margin-top: 8px; }
+.card-fullscreen .items-thead-v3 { font-size: 14px; padding: 10px 16px; }
+.card-fullscreen .item-row-v3 { font-size: 18px; padding: 12px 16px; }
+.card-fullscreen .col-qty { width: 60px; }
+.card-fullscreen .col-unit { width: 110px; }
+.card-fullscreen .col-total { width: 110px; }
+.card-fullscreen .items-footer-label { font-size: 15px; }
+.card-fullscreen .items-footer-amount { font-size: 26px; }
 
 /* カードボディ */
 .card-body-v3 {
@@ -630,9 +637,9 @@ body {
 }
 .items-thead-v3 {
   display: flex;
-  padding: 6px 12px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--border);
-  font-size: 10px;
+  font-size: 13px;
   color: var(--text3);
   font-weight: 500;
   text-transform: uppercase;
@@ -641,8 +648,8 @@ body {
 .item-row-v3 {
   display: flex;
   align-items: center;
-  padding: 8px 12px;
-  font-size: 12px;
+  padding: 10px 12px;
+  font-size: 16px;
   border-bottom: 1px solid var(--border);
   transition: background 0.15s;
 }
@@ -660,10 +667,10 @@ body {
   background: rgba(240,165,0,0.04);
   border-top: 1px solid rgba(240,165,0,0.1);
 }
-.items-footer-label { font-size: 11px; color: var(--text2); }
+.items-footer-label { font-size: 14px; color: var(--text2); }
 .items-footer-amount {
   font-family: var(--font-head);
-  font-size: 17px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--gold);
 }
@@ -1265,6 +1272,16 @@ body {
   .status-grid-v3 { flex-wrap: wrap; gap: 7px; }
   .stat-group { flex: 1 1 100%; min-width: 100%; }
   .stat-card { flex: 1 1 calc(50% - 4px); min-width: calc(50% - 4px); }
+  /* 一番上3つのグループ：高さ抑える */
+  .stat-group.group-3 .stat-group-btn { padding: 9px 8px; }
+  .stat-group.group-3 .stat-group-btn .stat-icon { font-size: 14px; margin-bottom: 2px; }
+  .stat-group.group-3 .stat-group-btn .stat-num { font-size: 22px; }
+  .stat-group.group-3 .stat-group-btn .stat-label { font-size: 11px; margin-top: 2px; }
+  /* 完了・キャンセルグループ：高さ抑える */
+  .stat-group.group-2 .stat-group-btn { padding: 9px 8px; }
+  .stat-group.group-2 .stat-group-btn .stat-icon { font-size: 14px; margin-bottom: 2px; }
+  .stat-group.group-2 .stat-group-btn .stat-num { font-size: 22px; }
+  .stat-group.group-2 .stat-group-btn .stat-label { font-size: 11px; margin-top: 2px; }
   .header-title { font-size: 16px; }
   .header-left { gap: 6px; }
   .stat-group-btn .stat-num { font-size: 20px; }
@@ -1322,11 +1339,15 @@ body {
     padding: 16px 20px;
     border-radius: 0;
   }
-  .card-fullscreen-top .card-name-v3 { font-size: 18px; }
-  .card-fullscreen-top .card-amount-v3 { font-size: 22px; }
+  .card-fullscreen-top .card-name-v3 { font-size: 20px; }
+  .card-fullscreen-top .card-amount-v3 { font-size: 26px; }
   .card-fullscreen .card-body-v3 { padding: 16px 20px 24px; }
-  .card-fullscreen .trans-btn-v3 { font-size: 15px; padding: 12px 16px; flex: 1; justify-content: center; }
-  .card-fullscreen .ctrl-btn-v3 { font-size: 12px; padding: 8px 12px; }
+  .card-fullscreen .trans-btn-v3 { font-size: 16px; padding: 13px 16px; flex: 1; justify-content: center; }
+  .card-fullscreen .ctrl-btn-v3 { font-size: 13px; padding: 9px 13px; }
+  .card-fullscreen .items-thead-v3 { font-size: 13px; }
+  .card-fullscreen .item-row-v3 { font-size: 16px; padding: 11px 14px; }
+  .card-fullscreen .items-footer-label { font-size: 14px; }
+  .card-fullscreen .items-footer-amount { font-size: 22px; }
 }
 
 @media (min-width: 641px) and (max-width: 860px) {
