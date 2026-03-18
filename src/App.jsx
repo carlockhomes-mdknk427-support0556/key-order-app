@@ -6,7 +6,7 @@ import Loading from './Loading'
 // ============================================================
 // バージョン・定数
 // ============================================================
-const APP_VERSION  = 'v3.0.0'
+const APP_VERSION  = 'v3.1.0'
 const WORKER_URL   = 'https://web-order.clh-0556-clh.workers.dev'
 const EMAIL_KEY    = 'clh_admin_email'
 
@@ -463,7 +463,8 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
 
   return (
     <>
-    <div className={`order-card-v3${expanded ? ' expanded' : ''}${alertInfo ? ' has-alert' : ''}${isLockedByOther ? ' locked-by-other' : ''}`}>
+    {/* リスト内カード */}
+    <div className={`order-card-v3${alertInfo ? ' has-alert' : ''}${isLockedByOther ? ' locked-by-other' : ''}`} onClick={handleExpand}>
       {alertInfo && (
         <div className="card-alert-strip">
           <AlertTriangle size={12} /> {alertInfo.label}
@@ -474,12 +475,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
           🔒 {lock.email} が編集中です
         </div>
       )}
-      {isLockedByMe && expanded && (
-        <div className="card-editing-strip">
-          ✏️ あなたが編集中
-        </div>
-      )}
-      <div className="card-header-v3" onClick={handleExpand}>
+      <div className="card-header-v3">
         <div className="card-status-bar" style={{background: st.color}} />
         <div className="card-info-v3">
           <div className="card-name-v3">
@@ -497,114 +493,142 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
           <ChevronRight size={16} className="card-chevron" />
         </div>
       </div>
-      {expanded && (
-        <div className="card-body-v3">
-          <div className="detail-grid-v3">
-            <div className="detail-item-v3">
-              <div className="detail-key-v3">電話番号</div>
-              <div className="detail-val-v3">{order.phone || '—'}</div>
-            </div>
-            {customerEmail && (
-              <div className="detail-item-v3">
-                <div className="detail-key-v3">メールアドレス</div>
-                <div className="detail-val-v3" style={{wordBreak:'break-all'}}>{customerEmail}</div>
+    </div>
+
+    {/* 全画面展開オーバーレイ */}
+    {expanded && (
+      <div className="card-fullscreen-overlay" onClick={e => { if (e.target === e.currentTarget) handleExpand() }}>
+        <div className="card-fullscreen">
+          <div className="card-fullscreen-top">
+            <div className="card-status-bar" style={{background: st.color, height: 52}} />
+            <div style={{flex:1,minWidth:0}}>
+              <div className="card-name-v3">
+                {order.status === 'inquiry' && <span className="inquiry-tag-v3">問合せ</span>}
+                {order.maker && <span className="maker-tag-v3">{MAKERS.find(m=>m.id===order.maker)?.label || order.maker}</span>}
+                <span style={{wordBreak:'break-all'}}>{order.name}</span>
               </div>
-            )}
-            <div className="detail-item-v3">
-              <div className="detail-key-v3">物件</div>
-              <div className="detail-val-v3">{order.mansion} {order.room ? order.room+'号室' : ''}</div>
+              <div className="card-sub-v3">{order.mansion}{order.room ? '　'+order.room+'号室' : ''}</div>
             </div>
-            <div className="detail-item-v3 full">
-              <div className="detail-key-v3">作業内容</div>
-              <div className="detail-val-v3">{order.work || '—'}</div>
+            <div style={{textAlign:'right',flexShrink:0}}>
+              <div className="card-amount-v3">{formatAmount(order.amount)}</div>
+              <div className="card-tax-label">税込</div>
+              <span className="card-status-badge" style={{background: st.bg, color: st.color, marginTop:4, display:'inline-block'}}>{st.label}</span>
             </div>
+            <button className="card-fullscreen-close" onClick={handleExpand}><X size={22} /></button>
           </div>
 
-          {order.items && order.items.length > 0 ? (
-            <div className="items-table-v3">
-              <div className="items-thead-v3">
-                <span className="col-name">商品名</span>
-                <span className="col-qty">数量</span>
-                <span className="col-unit">単価</span>
-                <span className="col-total">小計</span>
-              </div>
-              {order.items.map(item => (
-                <div key={item.name} className="item-row-v3">
-                  <span className="col-name">{item.name}</span>
-                  <span className="col-qty">{item.qty || 1}</span>
-                  <span className="col-unit">¥{Number(item.price).toLocaleString()}</span>
-                  <span className="col-total">¥{(item.price * (item.qty || 1)).toLocaleString()}</span>
-                </div>
-              ))}
-              {(() => {
-                const makerObj = MAKERS.find(m => m.id === order.maker)
-                const taxIncluded = makerObj?.taxIncluded || false
-                const subtotal = order.items.reduce((s, it) => s + (it.price * (it.qty || 1)), 0)
-                const tax = Math.floor(subtotal * 0.1)
-                const total = Number(order.amount) || subtotal + tax
-                return (
-                  <div className="items-footer-v3">
-                    <span className="items-footer-label">
-                      {!taxIncluded ? `税抜 ¥${subtotal.toLocaleString()} + 税 ¥${tax.toLocaleString()}` : '税込価格'}
-                    </span>
-                    <span className="items-footer-amount">¥{total.toLocaleString()}</span>
-                  </div>
-                )
-              })()}
-            </div>
-          ) : (
-            <div className="detail-grid-v3" style={{marginBottom:12}}>
+          {isLockedByMe && (
+            <div className="card-editing-strip">✏️ あなたが編集中</div>
+          )}
+
+          <div className="card-body-v3">
+            <div className="detail-grid-v3">
               <div className="detail-item-v3">
-                <div className="detail-key-v3">金額</div>
-                <div className="detail-val-v3">{formatAmount(order.amount)}</div>
+                <div className="detail-key-v3">電話番号</div>
+                <div className="detail-val-v3">{order.phone || '—'}</div>
+              </div>
+              {customerEmail && (
+                <div className="detail-item-v3">
+                  <div className="detail-key-v3">メールアドレス</div>
+                  <div className="detail-val-v3" style={{wordBreak:'break-all'}}>{customerEmail}</div>
+                </div>
+              )}
+              <div className="detail-item-v3">
+                <div className="detail-key-v3">物件</div>
+                <div className="detail-val-v3">{order.mansion} {order.room ? order.room+'号室' : ''}</div>
+              </div>
+              <div className="detail-item-v3 full">
+                <div className="detail-key-v3">作業内容</div>
+                <div className="detail-val-v3">{order.work || '—'}</div>
               </div>
             </div>
-          )}
 
-          {(order.keyNumber || order.clientName || order.clientPhone || order.clientAddress) && (
-            <div className="detail-grid-v3" style={{marginBottom:12}}>
-              <div className="detail-item-v3 full" style={{background:'rgba(240,165,0,0.03)',borderColor:'rgba(240,165,0,0.1)'}}>
-                <div className="detail-key-v3" style={{color:'var(--gold)'}}>その他管理会社</div>
-                <div className="detail-val-v3">
-                  {order.keyNumber     && <div>キーナンバー: {order.keyNumber}</div>}
-                  {order.clientName    && <div>ご依頼主様: {order.clientName}</div>}
-                  {order.clientPhone   && <div>電話番号: {order.clientPhone}</div>}
-                  {order.clientAddress && <div>ご住所: {order.clientAddress}</div>}
+            {order.items && order.items.length > 0 ? (
+              <div className="items-table-v3">
+                <div className="items-thead-v3">
+                  <span className="col-name">商品名</span>
+                  <span className="col-qty">数量</span>
+                  <span className="col-unit">単価</span>
+                  <span className="col-total">小計</span>
+                </div>
+                {order.items.map(item => (
+                  <div key={item.name} className="item-row-v3">
+                    <span className="col-name">{item.name}</span>
+                    <span className="col-qty">{item.qty || 1}</span>
+                    <span className="col-unit">¥{Number(item.price).toLocaleString()}</span>
+                    <span className="col-total">¥{(item.price * (item.qty || 1)).toLocaleString()}</span>
+                  </div>
+                ))}
+                {(() => {
+                  const makerObj = MAKERS.find(m => m.id === order.maker)
+                  const taxIncluded = makerObj?.taxIncluded || false
+                  const subtotal = order.items.reduce((s, it) => s + (it.price * (it.qty || 1)), 0)
+                  const tax = Math.floor(subtotal * 0.1)
+                  const total = Number(order.amount) || subtotal + tax
+                  return (
+                    <div className="items-footer-v3">
+                      <span className="items-footer-label">
+                        {!taxIncluded ? `税抜 ¥${subtotal.toLocaleString()} + 税 ¥${tax.toLocaleString()}` : '税込価格'}
+                      </span>
+                      <span className="items-footer-amount">¥{total.toLocaleString()}</span>
+                    </div>
+                  )
+                })()}
+              </div>
+            ) : (
+              <div className="detail-grid-v3" style={{marginBottom:12}}>
+                <div className="detail-item-v3">
+                  <div className="detail-key-v3">金額</div>
+                  <div className="detail-val-v3">{formatAmount(order.amount)}</div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          <div style={{fontSize:10,color:'var(--text3)',marginBottom:12}}>登録: {formatDate(order.createdAt)}</div>
+            {(order.keyNumber || order.clientName || order.clientPhone || order.clientAddress) && (
+              <div className="detail-grid-v3" style={{marginBottom:12}}>
+                <div className="detail-item-v3 full" style={{background:'rgba(240,165,0,0.03)',borderColor:'rgba(240,165,0,0.1)'}}>
+                  <div className="detail-key-v3" style={{color:'var(--gold)'}}>その他管理会社</div>
+                  <div className="detail-val-v3">
+                    {order.keyNumber     && <div>キーナンバー: {order.keyNumber}</div>}
+                    {order.clientName    && <div>ご依頼主様: {order.clientName}</div>}
+                    {order.clientPhone   && <div>電話番号: {order.clientPhone}</div>}
+                    {order.clientAddress && <div>ご住所: {order.clientAddress}</div>}
+                  </div>
+                </div>
+              </div>
+            )}
 
-          <div className="card-actions-v3">
-            <div className="trans-btns-v3">
-              {transitions.map(toId => {
-                const to = STATUSES.find(s => s.id === toId)
-                return (
-                  <button key={toId} className="trans-btn-v3" style={{ borderLeftColor: to.color }} onClick={() => onStatusChange(order.id, toId)}>
-                    <ArrowRight size={12} />{to.label}へ
-                  </button>
-                )
-              })}
-            </div>
-            <div className="ctrl-btns-v3">
-              {canEdit && <button className="ctrl-btn-v3" onClick={() => onEdit(order)} disabled={isLockedByOther}>編集</button>}
-              {order.status !== 'done' && order.status !== 'cancelled' && (
-                <button className="ctrl-btn-v3 done-btn" onClick={() => onStatusChange(order.id, 'done')}><Check size={12}/> 完了</button>
-              )}
-              {order.status !== 'cancelled' && (
-                <button className="ctrl-btn-v3 cancel-btn" onClick={() => onCancel(order.id)}><XCircle size={12}/> キャンセル</button>
-              )}
-              {canDelete && <button className="ctrl-btn-v3 del-btn" onClick={() => onDelete(order.id)}><X size={12}/> 削除</button>}
-              {showPayButton && (
-                <button className="ctrl-btn-v3 pay-btn" onClick={() => setShowPayPanel(true)}>💳 決済</button>
-              )}
+            <div style={{fontSize:11,color:'var(--text3)',marginBottom:14}}>登録: {formatDate(order.createdAt)}</div>
+
+            <div className="card-actions-v3">
+              <div className="trans-btns-v3">
+                {transitions.map(toId => {
+                  const to = STATUSES.find(s => s.id === toId)
+                  return (
+                    <button key={toId} className="trans-btn-v3" style={{ borderLeftColor: to.color }} onClick={() => onStatusChange(order.id, toId)}>
+                      <ArrowRight size={14} />{to.label}へ
+                    </button>
+                  )
+                })}
+              </div>
+              <div className="ctrl-btns-v3">
+                {canEdit && <button className="ctrl-btn-v3" onClick={() => onEdit(order)} disabled={isLockedByOther}>編集</button>}
+                {order.status !== 'done' && order.status !== 'cancelled' && (
+                  <button className="ctrl-btn-v3 done-btn" onClick={() => onStatusChange(order.id, 'done')}><Check size={14}/> 完了</button>
+                )}
+                {order.status !== 'cancelled' && (
+                  <button className="ctrl-btn-v3 cancel-btn" onClick={() => onCancel(order.id)}><XCircle size={14}/> キャンセル</button>
+                )}
+                {canDelete && <button className="ctrl-btn-v3 del-btn" onClick={() => onDelete(order.id)}><X size={14}/> 削除</button>}
+                {showPayButton && (
+                  <button className="ctrl-btn-v3 pay-btn" onClick={() => setShowPayPanel(true)}>💳 決済</button>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      )}
-    </div>
+      </div>
+    )}
 
       {/* 決済モーダル */}
       {showPayPanel && (
@@ -1567,9 +1591,37 @@ export default function App() {
 
         <div className="main-content">
           <div className="status-grid-v3">
-            {STATUSES.map(s => (
-              <StatusCard key={s.id} status={s} count={counts[s.id]} active={activeStatus === s.id} onClick={() => toggleStatus(s.id)} />
-            ))}
+            {/* グループ1: 杉並・お問合せ・案内済み */}
+            <div className="stat-group group-3">
+              {['suginami','inquiry','guided'].map(id => {
+                const s = STATUSES.find(st => st.id === id)
+                return (
+                  <button key={id} onClick={() => toggleStatus(id)} className={`stat-group-btn${activeStatus === id ? ' active' : ''}`} style={{'--c': s.color}}>
+                    <span className="stat-icon">{s.icon}</span>
+                    <div className="stat-num">{counts[id]}</div>
+                    <div className="stat-label">{s.label}</div>
+                  </button>
+                )
+              })}
+            </div>
+            {/* 個別: 受注・手配済み・入荷済・作業アポ済み */}
+            {['order','arranged','arrived','appt'].map(id => {
+              const s = STATUSES.find(st => st.id === id)
+              return <StatusCard key={id} status={s} count={counts[id]} active={activeStatus === id} onClick={() => toggleStatus(id)} />
+            })}
+            {/* グループ2: 完了・キャンセル */}
+            <div className="stat-group group-2">
+              {['done','cancelled'].map(id => {
+                const s = STATUSES.find(st => st.id === id)
+                return (
+                  <button key={id} onClick={() => toggleStatus(id)} className={`stat-group-btn${activeStatus === id ? ' active' : ''}`} style={{'--c': s.color}}>
+                    <span className="stat-icon">{s.icon}</span>
+                    <div className="stat-num">{counts[id]}</div>
+                    <div className="stat-label">{s.label}</div>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           <div className="alert-chips">
@@ -1589,6 +1641,19 @@ export default function App() {
               </button>
             )}
             <span className="count-label-v3">{filtered.length}件</span>
+          </div>
+
+          {/* 同期ステータスバー */}
+          <div className="sync-bar-v3">
+            <span>
+              {syncError
+                ? <span className="sync-err">⚠ {syncError}</span>
+                : lastSync
+                  ? <><span className="sync-dot" /> 最終同期: {formatDate(lastSync.toISOString())}</>
+                  : <span style={{color:'var(--warn)'}}>● 未同期</span>
+              }
+            </span>
+            <span>{APP_VERSION}</span>
           </div>
 
           <div className="order-list-v3">
@@ -1634,11 +1699,6 @@ export default function App() {
         )}
       </div>
 
-      {can(role, 'add') && (
-        <button className="fab-new-order" onClick={() => setShowForm(true)}>
-          <Plus size={20} /> 新規受注
-        </button>
-      )}
     </>
   )
 }
