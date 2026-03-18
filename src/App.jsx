@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Key, Plus, X, ChevronRight, Phone, Building2, FileText, JapaneseYen, ArrowRight, Loader2, RefreshCw, Settings, Search, AlertTriangle, LogOut, RotateCcw, Lock, Users, Check, XCircle, Mail } from 'lucide-react'
+import { Key, Plus, X, ChevronRight, ArrowRight, Loader2, RefreshCw, Settings, Search, AlertTriangle, LogOut, RotateCcw, Lock, Check, XCircle } from 'lucide-react'
 import './App.css'
 import Loading from './Loading'
 
@@ -308,27 +308,22 @@ function LoginScreen({ onLogin }) {
 // ============================================================
 // COMPONENTS
 // ============================================================
-function Badge({ count, color }) {
-  if (count === 0) return null
-  return <span style={{ background: color, color: '#fff', borderRadius: '50%', minWidth: 28, height: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, fontFamily: 'Space Mono, monospace', boxShadow: `0 0 12px ${color}80`, padding: '0 6px' }}>{count}</span>
-}
-
 function StatusCard({ status, count, onClick, active }) {
   return (
-    <button onClick={onClick} className="status-card" style={{ '--card-color': status.color, '--card-bg': status.bg, outline: active ? `2px solid ${status.color}` : 'none' }}>
-      <div className="status-card-icon">{status.icon}</div>
-      <div className="status-card-label">{status.label}</div>
-      <div className="status-card-badge"><Badge count={count} color={status.color} /></div>
+    <button onClick={onClick} className={`stat-card${active ? ' active' : ''}`} style={{'--c': status.color}}>
+      <span className="stat-icon">{status.icon}</span>
+      <div className="stat-num">{count}</div>
+      <div className="stat-label">{status.label}</div>
     </button>
   )
 }
 
 function AlertCard({ alert, count, onClick, active }) {
+  if (count === 0) return null
   return (
-    <button onClick={onClick} className="alert-card" style={{ '--alert-color': alert.color, outline: active ? `2px solid ${alert.color}` : 'none', opacity: count === 0 ? 0.4 : 1 }}>
-      <AlertTriangle size={14} color={alert.color} />
-      <span className="alert-label">{alert.label}</span>
-      {count > 0 && <Badge count={count} color={alert.color} />}
+    <button onClick={onClick} className={`alert-chip${active ? ' active' : ''}`}
+      style={{background:'rgba(239,68,68,0.08)',borderColor:'rgba(239,68,68,0.2)',color:'#fca5a5'}}>
+      ⚠ {alert.label} <strong>{count}</strong>
     </button>
   )
 }
@@ -468,130 +463,142 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
 
   return (
     <>
-    <div className="order-card" style={{ ...cardStyle, ...borderStyle, opacity: isLockedByOther ? 0.85 : 1 }}>
+    <div className={`order-card-v3${expanded ? ' expanded' : ''}${alertInfo ? ' has-alert' : ''}${isLockedByOther ? ' locked-by-other' : ''}`}>
       {alertInfo && (
-        <div className="alert-banner" style={{ background: alertInfo.color }}>
+        <div className="card-alert-strip">
           <AlertTriangle size={12} /> {alertInfo.label}
         </div>
       )}
       {isLockedByOther && (
-        <div className="alert-banner" style={{ background: '#7f8c8d' }}>
+        <div className="card-lock-strip">
           🔒 {lock.email} が編集中です
         </div>
       )}
       {isLockedByMe && expanded && (
-        <div className="alert-banner" style={{ background: '#2980b9' }}>
+        <div className="card-editing-strip">
           ✏️ あなたが編集中
         </div>
       )}
-      <div className="order-card-header" onClick={handleExpand}>
-        <div className="order-card-left">
-          <span className="order-status-dot" style={{ background: st.color }} />
-          <div style={{minWidth:0}}>
-            <div className="order-name">
-              {order.status === 'inquiry' && <span className="inquiry-tag">問合せ</span>}
-              {order.maker && <span className="maker-tag">{MAKERS.find(m=>m.id===order.maker)?.label || order.maker}</span>}
-              <span style={{wordBreak:'break-all'}}>{order.name}</span>
-            </div>
-            <div className="order-sub" style={{fontSize:12}}>{order.mansion}{order.room ? '　'+order.room+'号室' : ''}</div>
-            {order.phone && <div style={{fontSize:11,color:'var(--text-dim)',marginTop:2}}>{order.phone}</div>}
+      <div className="card-header-v3" onClick={handleExpand}>
+        <div className="card-status-bar" style={{background: st.color}} />
+        <div className="card-info-v3">
+          <div className="card-name-v3">
+            {order.status === 'inquiry' && <span className="inquiry-tag-v3">問合せ</span>}
+            {order.maker && <span className="maker-tag-v3">{MAKERS.find(m=>m.id===order.maker)?.label || order.maker}</span>}
+            <span style={{wordBreak:'break-all'}}>{order.name}</span>
           </div>
+          <div className="card-sub-v3">{order.mansion}{order.room ? '　'+order.room+'号室' : ''}</div>
+          {order.phone && <div className="card-phone-v3">{order.phone}</div>}
         </div>
-        <div className="order-card-right" style={{flexShrink:0,textAlign:'right'}}>
-          <div className="order-amount">{formatAmount(order.amount)}</div>
-          <div style={{fontSize:10,color:'var(--text-dim)',marginTop:1}}>税込</div>
-          <ChevronRight size={16} style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', color: 'var(--text-dim)', marginTop:4 }} />
+        <div className="card-right-v3">
+          <div className="card-amount-v3">{formatAmount(order.amount)}</div>
+          <div className="card-tax-label">税込</div>
+          <span className="card-status-badge" style={{background: st.bg, color: st.color}}>{st.label}</span>
+          <ChevronRight size={16} className="card-chevron" />
         </div>
       </div>
       {expanded && (
-        <div className="order-card-body">
-          <div className="order-detail-grid">
-            <div className="detail-row"><Phone size={13} /><span>{order.phone || '—'}</span></div>
-            {customerEmail && <div className="detail-row"><Mail size={13} /><span style={{wordBreak:'break-all'}}>{customerEmail}</span></div>}
-            <div className="detail-row"><Building2 size={13} /><span>{order.mansion} {order.room ? order.room+'号室' : ''}</span></div>
-            <div className="detail-row"><FileText size={13} /><span>{order.work || '—'}</span></div>
-            {order.items && order.items.length > 0 ? (
-              <div className="detail-row detail-row-items">
-                <JapaneseYen size={13} />
-                <div className="items-detail">
-                  <div className="items-detail-title">
-                    {order.maker && <span className="maker-tag">{MAKERS.find(m=>m.id===order.maker)?.label}</span>}
-                    商品明細
-                  </div>
-                  {order.items.map(item => (
-                    <div key={item.name} className="items-detail-row">
-                      <span className="items-detail-name">{item.name}</span>
-                      <span className="items-detail-qty" style={{color:'var(--text-dim)',fontSize:11}}>
-                        ¥{Number(item.price).toLocaleString()} × {item.qty || 1}
-                      </span>
-                      <span className="items-detail-price">= ¥{(item.price * (item.qty || 1)).toLocaleString()}</span>
-                    </div>
-                  ))}
-                  {(() => {
-                    const makerObj = MAKERS.find(m => m.id === order.maker)
-                    const taxIncluded = makerObj?.taxIncluded || false
-                    const subtotal = order.items.reduce((s, it) => s + (it.price * (it.qty || 1)), 0)
-                    const tax = Math.floor(subtotal * 0.1)
-                    const total = Number(order.amount) || subtotal + tax
-                    return (
-                      <div style={{marginTop:6,paddingTop:6,borderTop:'1px solid rgba(255,255,255,0.08)',fontSize:11}}>
-                        {!taxIncluded && (
-                          <div style={{color:'var(--text-dim)',marginBottom:2}}>
-                            税抜き ¥{subtotal.toLocaleString()} ＋ 消費税10% ¥{tax.toLocaleString()}
-                          </div>
-                        )}
-                        <div className="items-detail-total">
-                          税込合計: <strong>¥{total.toLocaleString()}</strong>
-                        </div>
-                      </div>
-                    )
-                  })()}
-                </div>
+        <div className="card-body-v3">
+          <div className="detail-grid-v3">
+            <div className="detail-item-v3">
+              <div className="detail-key-v3">電話番号</div>
+              <div className="detail-val-v3">{order.phone || '—'}</div>
+            </div>
+            {customerEmail && (
+              <div className="detail-item-v3">
+                <div className="detail-key-v3">メールアドレス</div>
+                <div className="detail-val-v3" style={{wordBreak:'break-all'}}>{customerEmail}</div>
               </div>
-            ) : (
-              <div className="detail-row"><JapaneseYen size={13} /><span>{formatAmount(order.amount)}</span></div>
             )}
+            <div className="detail-item-v3">
+              <div className="detail-key-v3">物件</div>
+              <div className="detail-val-v3">{order.mansion} {order.room ? order.room+'号室' : ''}</div>
+            </div>
+            <div className="detail-item-v3 full">
+              <div className="detail-key-v3">作業内容</div>
+              <div className="detail-val-v3">{order.work || '—'}</div>
+            </div>
           </div>
-          {(order.keyNumber || order.clientName || order.clientPhone || order.clientAddress) && (
-            <div className="extra-info">
-              <div className="extra-info-title">その他管理会社</div>
-              <div className="order-detail-grid">
-                {order.keyNumber    && <div className="detail-row"><span className="extra-label">キーナンバー:</span><span>{order.keyNumber}</span></div>}
-                {order.clientName   && <div className="detail-row"><span className="extra-label">ご依頼主様:</span><span>{order.clientName}</span></div>}
-                {order.clientPhone  && <div className="detail-row"><span className="extra-label">電話番号:</span><span>{order.clientPhone}</span></div>}
-                {order.clientAddress && <div className="detail-row"><span className="extra-label">ご住所:</span><span>{order.clientAddress}</span></div>}
+
+          {order.items && order.items.length > 0 ? (
+            <div className="items-table-v3">
+              <div className="items-thead-v3">
+                <span className="col-name">商品名</span>
+                <span className="col-qty">数量</span>
+                <span className="col-unit">単価</span>
+                <span className="col-total">小計</span>
+              </div>
+              {order.items.map(item => (
+                <div key={item.name} className="item-row-v3">
+                  <span className="col-name">{item.name}</span>
+                  <span className="col-qty">{item.qty || 1}</span>
+                  <span className="col-unit">¥{Number(item.price).toLocaleString()}</span>
+                  <span className="col-total">¥{(item.price * (item.qty || 1)).toLocaleString()}</span>
+                </div>
+              ))}
+              {(() => {
+                const makerObj = MAKERS.find(m => m.id === order.maker)
+                const taxIncluded = makerObj?.taxIncluded || false
+                const subtotal = order.items.reduce((s, it) => s + (it.price * (it.qty || 1)), 0)
+                const tax = Math.floor(subtotal * 0.1)
+                const total = Number(order.amount) || subtotal + tax
+                return (
+                  <div className="items-footer-v3">
+                    <span className="items-footer-label">
+                      {!taxIncluded ? `税抜 ¥${subtotal.toLocaleString()} + 税 ¥${tax.toLocaleString()}` : '税込価格'}
+                    </span>
+                    <span className="items-footer-amount">¥{total.toLocaleString()}</span>
+                  </div>
+                )
+              })()}
+            </div>
+          ) : (
+            <div className="detail-grid-v3" style={{marginBottom:12}}>
+              <div className="detail-item-v3">
+                <div className="detail-key-v3">金額</div>
+                <div className="detail-val-v3">{formatAmount(order.amount)}</div>
               </div>
             </div>
           )}
-          <div className="order-date">登録: {formatDate(order.createdAt)}</div>
-          <div className="order-actions">
-            <div className="transition-buttons">
+
+          {(order.keyNumber || order.clientName || order.clientPhone || order.clientAddress) && (
+            <div className="detail-grid-v3" style={{marginBottom:12}}>
+              <div className="detail-item-v3 full" style={{background:'rgba(240,165,0,0.03)',borderColor:'rgba(240,165,0,0.1)'}}>
+                <div className="detail-key-v3" style={{color:'var(--gold)'}}>その他管理会社</div>
+                <div className="detail-val-v3">
+                  {order.keyNumber     && <div>キーナンバー: {order.keyNumber}</div>}
+                  {order.clientName    && <div>ご依頼主様: {order.clientName}</div>}
+                  {order.clientPhone   && <div>電話番号: {order.clientPhone}</div>}
+                  {order.clientAddress && <div>ご住所: {order.clientAddress}</div>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div style={{fontSize:10,color:'var(--text3)',marginBottom:12}}>登録: {formatDate(order.createdAt)}</div>
+
+          <div className="card-actions-v3">
+            <div className="trans-btns-v3">
               {transitions.map(toId => {
                 const to = STATUSES.find(s => s.id === toId)
                 return (
-                  <button key={toId} className="transition-btn" style={{ '--t-color': to.color }} onClick={() => onStatusChange(order.id, toId)}>
+                  <button key={toId} className="trans-btn-v3" style={{ borderLeftColor: to.color }} onClick={() => onStatusChange(order.id, toId)}>
                     <ArrowRight size={12} />{to.label}へ
                   </button>
                 )
               })}
             </div>
-            <div className="card-controls">
-              {canEdit && <button className="ctrl-btn edit" onClick={() => onEdit(order)} disabled={isLockedByOther}>編集</button>}
+            <div className="ctrl-btns-v3">
+              {canEdit && <button className="ctrl-btn-v3" onClick={() => onEdit(order)} disabled={isLockedByOther}>編集</button>}
               {order.status !== 'done' && order.status !== 'cancelled' && (
-                <button className="ctrl-btn done" onClick={() => onStatusChange(order.id, 'done')}>✅ 完了</button>
+                <button className="ctrl-btn-v3 done-btn" onClick={() => onStatusChange(order.id, 'done')}><Check size={12}/> 完了</button>
               )}
               {order.status !== 'cancelled' && (
-                <button className="ctrl-btn cancel" onClick={() => onCancel(order.id)}>❌ キャンセル</button>
+                <button className="ctrl-btn-v3 cancel-btn" onClick={() => onCancel(order.id)}><XCircle size={12}/> キャンセル</button>
               )}
-              {canDelete && <button className="ctrl-btn del" onClick={() => onDelete(order.id)}>削除</button>}
+              {canDelete && <button className="ctrl-btn-v3 del-btn" onClick={() => onDelete(order.id)}><X size={12}/> 削除</button>}
               {showPayButton && (
-                <button
-                  className="ctrl-btn"
-                  style={{background:'rgba(240,165,0,0.15)',color:'#f0a500',borderColor:'rgba(240,165,0,0.3)'}}
-                  onClick={() => setShowPayPanel(true)}
-                >
-                  💳 決済
-                </button>
+                <button className="ctrl-btn-v3 pay-btn" onClick={() => setShowPayPanel(true)}>💳 決済</button>
               )}
             </div>
           </div>
@@ -1558,87 +1565,59 @@ export default function App() {
           </div>
         </header>
 
-        <div className="status-grid">
-          <div className="status-card-group">
-            {['suginami','inquiry','guided'].map(id => {
-              const s = STATUSES.find(x => x.id === id)
-              return (
-                <button key={id} onClick={() => toggleStatus(id)} className="status-card status-card-sub" style={{ '--card-color': s.color, '--card-bg': s.bg, outline: activeStatus === id ? `2px solid ${s.color}` : 'none' }}>
-                  <span className="status-card-icon-sm">{s.icon}</span>
-                  <span className="status-card-label-sm">{s.label}</span>
-                  <span className="status-card-badge-sm"><Badge count={counts[id]} color={s.color} /></span>
-                </button>
-              )
-            })}
+        <div className="main-content">
+          <div className="status-grid-v3">
+            {STATUSES.map(s => (
+              <StatusCard key={s.id} status={s} count={counts[s.id]} active={activeStatus === s.id} onClick={() => toggleStatus(s.id)} />
+            ))}
           </div>
-          {STATUSES.filter(s => !['inquiry','guided','suginami','done','cancelled'].includes(s.id)).map(s => (
-            <StatusCard key={s.id} status={s} count={counts[s.id]} active={activeStatus === s.id} onClick={() => toggleStatus(s.id)} />
-          ))}
-          {(() => {
-            const done = STATUSES.find(s => s.id === 'done')
-            const cancelled = STATUSES.find(s => s.id === 'cancelled')
-            return (
-              <div className="status-card-split">
-                <button className="status-card-split-half top" style={{ '--card-color': done.color, outline: activeStatus === 'done' ? `2px solid ${done.color}` : 'none' }} onClick={() => toggleStatus('done')}>
-                  <span className="split-icon">{done.icon}</span>
-                  <span className="split-label">{done.label}</span>
-                  <Badge count={counts['done']} color={done.color} />
-                </button>
-                <button className="status-card-split-half bottom" style={{ '--card-color': cancelled.color, outline: activeStatus === 'cancelled' ? `2px solid ${cancelled.color}` : 'none' }} onClick={() => toggleStatus('cancelled')}>
-                  <span className="split-icon">{cancelled.icon}</span>
-                  <span className="split-label">{cancelled.label}</span>
-                  <Badge count={counts['cancelled']} color={cancelled.color} />
-                </button>
-              </div>
-            )
-          })()}
-        </div>
 
-        <div className="alert-grid">
-          {ALERTS.map(a => <AlertCard key={a.id} alert={a} count={alertCounts[a.id]} active={activeAlert === a.id} onClick={() => toggleAlert(a.id)} />)}
-        </div>
-
-        <div className="list-toolbar">
-          <div className="search-wrap">
-            <Search size={14} color="var(--text-dim)" />
-            <input name="search" className="search-input" placeholder="氏名・マンション・電話番号で検索..." value={search} onChange={e => setSearch(e.target.value)} autoComplete="off" />
-            {search && <button onClick={() => setSearch('')} style={{background:'none',border:'none',color:'var(--text-dim)',cursor:'pointer'}}><X size={14}/></button>}
+          <div className="alert-chips">
+            {ALERTS.map(a => <AlertCard key={a.id} alert={a} count={alertCounts[a.id]} active={activeAlert === a.id} onClick={() => toggleAlert(a.id)} />)}
           </div>
-          {(activeStatus || activeAlert) && (
-            <button className="filter-chip" onClick={() => { setActiveStatus(null); setActiveAlert(null) }}>
-              {activeStatus ? STATUSES.find(s=>s.id===activeStatus)?.label : ALERTS.find(a=>a.id===activeAlert)?.label}
-              <X size={12} />
-            </button>
-          )}
-          <span className="count-label">{filtered.length}件</span>
-        </div>
 
-        <div className="order-list">
-          {filtered.length === 0 && (
-            <div className="empty-state">
-              <Key size={40} color="var(--border)" />
-              <p>データがありません</p>
-              {!activeStatus && !activeAlert && can(role, 'add') && (
-                <button className="btn-primary" style={{marginTop:16}} onClick={() => setShowForm(true)}><Plus size={14}/> 最初の受注を登録</button>
-              )}
+          <div className="toolbar-v3">
+            <div className="search-wrap-v3">
+              <Search size={14} className="search-icon-v3" />
+              <input name="search" className="search-input-v3" placeholder="氏名・マンション・電話番号で検索..." value={search} onChange={e => setSearch(e.target.value)} autoComplete="off" />
+              {search && <button onClick={() => setSearch('')} style={{background:'none',border:'none',color:'var(--text3)',cursor:'pointer',position:'absolute',right:10,top:'50%',transform:'translateY(-50%)'}}><X size={14}/></button>}
             </div>
-          )}
-          {filtered.map(o => (
-            <OrderCard
-              key={o.id}
-              order={o}
-              onStatusChange={changeStatus}
-              onDelete={deleteOrder}
-              onEdit={o => setEditingOrder(o)}
-              onCancel={cancelOrder}
-              canDelete={can(role, 'delete')}
-              canEdit={can(role, 'edit')}
-              locks={locks}
-              userEmail={getUserEmail()}
-              onLock={lockOrder}
-              onUnlock={unlockOrder}
-            />
-          ))}
+            {(activeStatus || activeAlert) && (
+              <button className="filter-chip-v3" onClick={() => { setActiveStatus(null); setActiveAlert(null) }}>
+                {activeStatus ? STATUSES.find(s=>s.id===activeStatus)?.label : ALERTS.find(a=>a.id===activeAlert)?.label}
+                <X size={12} />
+              </button>
+            )}
+            <span className="count-label-v3">{filtered.length}件</span>
+          </div>
+
+          <div className="order-list-v3">
+            {filtered.length === 0 && (
+              <div className="empty-state-v3">
+                <div className="empty-icon-v3">🔑</div>
+                <p>データがありません</p>
+                {!activeStatus && !activeAlert && can(role, 'add') && (
+                  <button className="btn-primary" style={{marginTop:16}} onClick={() => setShowForm(true)}><Plus size={14}/> 最初の受注を登録</button>
+                )}
+              </div>
+            )}
+            {filtered.map(o => (
+              <OrderCard
+                key={o.id}
+                order={o}
+                onStatusChange={changeStatus}
+                onDelete={deleteOrder}
+                onEdit={o => setEditingOrder(o)}
+                onCancel={cancelOrder}
+                canDelete={can(role, 'delete')}
+                canEdit={can(role, 'edit')}
+                locks={locks}
+                userEmail={getUserEmail()}
+                onLock={lockOrder}
+                onUnlock={unlockOrder}
+              />
+            ))}
+          </div>
         </div>
 
         {showForm     && <OrderForm onSave={addOrder}  onCancel={() => setShowForm(false)} />}
