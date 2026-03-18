@@ -6,7 +6,7 @@ import Loading from './Loading'
 // ============================================================
 // バージョン・定数
 // ============================================================
-const APP_VERSION  = 'v3.1.0'
+const APP_VERSION  = 'v3.1.1'
 const WORKER_URL   = 'https://web-order.clh-0556-clh.workers.dev'
 const EMAIL_KEY    = 'clh_admin_email'
 
@@ -149,8 +149,9 @@ async function apiCall(payload) {
 async function fetchOrders() {
   try {
     const data = await apiCall({ action: 'get_orders' })
-    return data.orders || null
-  } catch { return null }
+    if (data.status === 'error') return { orders: null, error: data.message || '同期エラー' }
+    return { orders: data.orders || null, error: null }
+  } catch (e) { return { orders: null, error: 'ネットワークエラー' } }
 }
 
 async function fetchDeletedOrders() {
@@ -1352,18 +1353,28 @@ export default function App() {
     Promise.all([
       fetchOrders(),
       fetchDeletedOrders(),
-    ]).then(([remote, deleted]) => {
-      if (remote !== null) { if (remote.length > 0) setOrders(remote); setLastSync(new Date()) }
+    ]).then(([result, deleted]) => {
+      if (result.error) {
+        setSyncError(result.error)
+      } else if (result.orders !== null) {
+        if (result.orders.length > 0) setOrders(result.orders)
+        setLastSync(new Date())
+      }
       if (deleted) setDeletedOrders(deleted)
       finishLoading(); clearTimeout(safetyTimer)
-    }).catch(() => { finishLoading(); clearTimeout(safetyTimer) })
+    }).catch(() => { setSyncError('接続に失敗しました'); finishLoading(); clearTimeout(safetyTimer) })
 
     const timer = setInterval(() => {
       // 編集中・フォーム表示中はポーリングをスキップ
       setEditingOrder(current => {
         if (current) return current // 編集中はスキップ
-        fetchOrders().then(remote => {
-          if (remote !== null) { if (remote.length > 0) setOrders(remote); setLastSync(new Date()) }
+        fetchOrders().then(result => {
+          if (result.error) {
+            setSyncError(result.error)
+          } else if (result.orders !== null) {
+            if (result.orders.length > 0) setOrders(result.orders)
+            setLastSync(new Date())
+          }
         })
         return current
       })
@@ -1433,9 +1444,13 @@ export default function App() {
   }
 
   async function pullFromGAS() {
-    setSyncing(true)
-    const remote = await fetchOrders()
-    if (remote) { setOrders(remote); setLastSync(new Date()) }
+    setSyncing(true); setSyncError('')
+    const result = await fetchOrders()
+    if (result.error) {
+      setSyncError(result.error)
+    } else if (result.orders) {
+      setOrders(result.orders); setLastSync(new Date())
+    }
     setSyncing(false)
   }
 
@@ -1647,10 +1662,10 @@ export default function App() {
           <div className="sync-bar-v3">
             <span>
               {syncError
-                ? <span className="sync-err">⚠ {syncError}</span>
+                ? <span className="sync-err">⚠ {syncError} — <button onClick={pullFromGAS} style={{background:'none',border:'none',color:'#fca5a5',cursor:'pointer',textDecoration:'underline',padding:0,fontSize:'inherit'}}>再試行</button></span>
                 : lastSync
                   ? <><span className="sync-dot" /> 最終同期: {formatDate(lastSync.toISOString())}</>
-                  : <span style={{color:'var(--warn)'}}>● 未同期</span>
+                  : <span style={{color:'var(--warn)'}}>● 未同期 — <button onClick={pullFromGAS} style={{background:'none',border:'none',color:'var(--warn)',cursor:'pointer',textDecoration:'underline',padding:0,fontSize:'inherit'}}>今すぐ同期</button></span>
               }
             </span>
             <span>{APP_VERSION}</span>
