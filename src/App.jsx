@@ -6,7 +6,7 @@ import Loading from './Loading'
 // ============================================================
 // バージョン・定数
 // ============================================================
-const APP_VERSION  = 'v3.2.4'
+const APP_VERSION  = 'v3.2.5'
 const WORKER_URL   = 'https://web-order.clh-0556-clh.workers.dev'
 const EMAIL_KEY    = 'clh_admin_email'
 
@@ -722,20 +722,14 @@ function shouldShowKeyNumber(maker, items) {
 }
 
 function ItemSelector({ maker, items, onChange }) {
-  const [selectedKey, setSelectedKey] = useState('')
   const [customName, setCustomName]   = useState('')
   const [customPrice, setCustomPrice] = useState('')
-  const groups   = MAKER_PRODUCTS[maker] || []
-  const allItems = groups.flatMap(g => g.items.map(i => ({ ...i, group: g.group })))
+  const groups = MAKER_PRODUCTS[maker] || []
 
-  function addFromSelect() {
-    if (!selectedKey) return
-    const product = allItems.find(i => i.name === selectedKey)
-    if (!product) return
+  function addProduct(product) {
     const existing = items.find(i => i.name === product.name)
     if (existing) onChange(items.map(i => i.name === product.name ? { ...i, qty: i.qty + 1 } : i))
     else          onChange([...items, { name: product.name, price: product.price, qty: 1 }])
-    setSelectedKey('')
   }
 
   function addCustom() {
@@ -756,16 +750,24 @@ function ItemSelector({ maker, items, onChange }) {
   return (
     <div className="item-selector">
       {groups.length > 0 && (
-        <div className="item-add-row">
-          <select name="product-select" value={selectedKey} onChange={e => setSelectedKey(e.target.value)} className="product-select">
-            <option value="">商品を選択...</option>
-            {groups.map(g => (
-              <optgroup key={g.group} label={g.group}>
-                {g.items.map(p => <option key={p.name} value={p.name}>{p.name}（¥{p.price.toLocaleString()}）</option>)}
-              </optgroup>
-            ))}
-          </select>
-          <button type="button" className="btn-add-item" onClick={addFromSelect} disabled={!selectedKey}><Plus size={14} /> 追加</button>
+        <div className="product-chip-area">
+          {groups.map(g => (
+            <div key={g.group}>
+              <div className="product-chip-group-label">{g.group}</div>
+              <div className="product-chip-list">
+                {g.items.map(p => {
+                  const inCart = items.find(i => i.name === p.name)
+                  return (
+                    <button type="button" key={p.name} className={`product-chip${inCart ? ' in-cart' : ''}`} onClick={() => addProduct(p)}>
+                      <span className="chip-name">{p.name}</span>
+                      <span className="chip-price">¥{p.price.toLocaleString()}</span>
+                      {inCart && <span className="chip-qty-badge">×{inCart.qty}</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       )}
       <div className="custom-item-row">
@@ -827,17 +829,17 @@ function OrderForm({ initial, onSave, onCancel }) {
               <input type="checkbox" name="isInquiry" checked={form.isInquiry || false} onChange={e => { handle(e); if (e.target.checked) setForm(f => ({ ...f, isGuided: false, isSuginami: false })) }} />
               <span>💬 お問合せセクションとして登録</span>
             </label>
-            <label className="toggle-label" style={{marginTop:6}}>
+            <label className="toggle-label">
               <input type="checkbox" name="isGuided" checked={form.isGuided || false} onChange={e => { handle(e); if (e.target.checked) setForm(f => ({ ...f, isInquiry: false, isSuginami: false })) }} />
               <span>📋 案内済みとして登録</span>
             </label>
-            <label className="toggle-label" style={{marginTop:6}}>
+            <label className="toggle-label">
               <input type="checkbox" name="isSuginami" checked={form.isSuginami || false} onChange={e => { handle(e); if (e.target.checked) setForm(f => ({ ...f, isInquiry: false, isGuided: false })) }} />
               <span>🏢 杉並本社（受付）として登録</span>
             </label>
             <p className="toggle-note">チェックなしの場合は受注セクションで処理されます</p>
           </div>
-          <label>氏名 <span className="req">*</span><input name="name" value={form.name} onChange={handle} placeholder="田中 太郎" required /></label>
+          <label><span>氏名 <span className="req">*</span></span><input name="name" value={form.name} onChange={handle} placeholder="田中 太郎" required /></label>
           <label>電話番号<input name="phone" value={form.phone} onChange={handle} placeholder="090-0000-0000" type="tel" /></label>
           <div className="form-row">
             <label>マンション名<input name="mansion" value={form.mansion} onChange={handle} placeholder="○○マンション" /></label>
