@@ -6,7 +6,7 @@ import Loading from './Loading'
 // ============================================================
 // バージョン・定数
 // ============================================================
-const APP_VERSION  = 'v3.2.0'
+const APP_VERSION  = 'v3.2.1'
 const WORKER_URL   = 'https://web-order.clh-0556-clh.workers.dev'
 const EMAIL_KEY    = 'clh_admin_email'
 
@@ -270,7 +270,15 @@ function LoginScreen({ onLogin }) {
   return (
     <div className="login-screen">
       <div className="login-card">
-        <div className="login-logo"><Key size={28} color="var(--accent)" /><span>CLH-Support-Bridge</span></div>
+        <div className="login-logo">
+          <span className="key-icon-wrap">
+            <span className="key-wave" />
+            <span className="key-wave" />
+            <span className="key-wave" />
+            <Key size={34} color="var(--accent)" style={{position:'relative',zIndex:1}} />
+          </span>
+          <span className="login-title">CLH-Support-Bridge</span>
+        </div>
         <div className="login-sub">CARLOCK HOMES ADMIN</div>
 
         {mode === 'login' ? (
@@ -808,7 +816,7 @@ function OrderForm({ initial, onSave, onCancel }) {
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onCancel()}>
-      <div className="modal">
+      <div className="modal" style={{maxWidth:1320}}>
         <div className="modal-header">
           <h2>{initial ? '受注編集' : '新規受注'}</h2>
           <button className="modal-close" onClick={onCancel}><X size={20} /></button>
@@ -1576,7 +1584,7 @@ export default function App() {
               <span className="key-wave" />
               <span className="key-wave" />
               <span className="key-wave" />
-              <Key size={22} color="var(--accent)" style={{position:'relative',zIndex:1}} />
+              <Key size={30} color="var(--accent)" style={{position:'relative',zIndex:1}} />
             </span>
             <span className="header-title">CLH-Support-Bridge</span>
             {totalAlerts > 0 && <span className="header-alert-badge">{totalAlerts}件要対応</span>}

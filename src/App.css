@@ -3,7 +3,7 @@
    デザインコンセプト: Professional Dark Dashboard
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Syne:wght@400;500;700;800&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400;1,700&family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=Syne:wght@400;500;700;800&family=DM+Mono:wght@400;500&display=swap');
 
 /* ── リセット・変数 ─────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,7 +31,8 @@
   --border2:    rgba(255,255,255,0.22);
   --card:       rgba(255,255,255,0.07);
   --card2:      rgba(255,255,255,0.12);
-  --font-head:  'Syne', sans-serif;
+  --font-head:  'Playfair Display', 'Syne', serif;
+  --font-luxury: 'Cormorant Garamond', 'Playfair Display', serif;
   --font-body:  'Inter', 'Hiragino Kaku Gothic ProN', sans-serif;
   --font-mono:  'DM Mono', monospace;
 }
@@ -67,6 +68,17 @@ body {
 @keyframes keyWaveOut {
   0%   { opacity:0.7; transform:scale(0.3); }
   100% { opacity:0;   transform:scale(1.4); }
+}
+@keyframes titleWaveGlow {
+  0%, 44%  { text-shadow: none; }
+  50%, 68% {
+    text-shadow:
+      0 0 12px rgba(96,165,250,0.9),
+      0 0 28px rgba(59,130,246,0.5),
+      0 0 54px rgba(59,130,246,0.25);
+    color: #fff;
+  }
+  90%, 100% { text-shadow: none; }
 }
 
 /* ── 鍵アイコン電波アニメーション ─────── */
@@ -128,12 +140,13 @@ body {
 }
 
 .header-title {
-  font-family: var(--font-head);
-  font-size: 20px;
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
   font-weight: 800;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   color: var(--text1);
   white-space: nowrap;
+  animation: titleWaveGlow 1.8s ease-in-out infinite;
 }
 
 .header-title span { color: var(--gold); }
@@ -265,11 +278,12 @@ body {
 
 .stat-icon { font-size: 20px; display: block; margin-bottom: 8px; }
 .stat-num {
-  font-family: var(--font-head);
+  font-family: 'Cormorant Garamond', 'Playfair Display', serif;
   font-size: 36px;
   font-weight: 700;
   color: var(--text1);
   line-height: 1;
+  letter-spacing: 0.02em;
 }
 .stat-label { font-size: 15px; color: var(--text2); margin-top: 5px; font-weight: 500; }
 
@@ -316,7 +330,7 @@ body {
 .stat-group-btn.active::before { opacity: 1; }
 .stat-group-btn .stat-icon { font-size: 16px; display: block; margin-bottom: 4px; }
 .stat-group-btn .stat-num {
-  font-family: var(--font-head);
+  font-family: 'Cormorant Garamond', 'Playfair Display', serif;
   font-size: 30px;
   font-weight: 700;
   color: var(--text1);
@@ -542,11 +556,12 @@ body {
   flex-shrink: 0;
 }
 .card-amount-v3 {
-  font-family: var(--font-head);
-  font-size: 26px;
+  font-family: 'Cormorant Garamond', 'Playfair Display', serif;
+  font-size: 28px;
   font-weight: 700;
   color: var(--gold);
   line-height: 1;
+  letter-spacing: 0.02em;
 }
 .card-tax-label {
   font-size: 9px;
@@ -700,19 +715,21 @@ body {
 .col-total { width: 84px; text-align: right; color: var(--gold); font-weight: 500; font-family: var(--font-mono); }
 .items-footer-v3 {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   padding: 10px 14px;
   background: rgba(240,165,0,0.05);
   border-top: 1px solid rgba(240,165,0,0.12);
-  gap: 12px;
+  gap: 16px;
 }
-.items-footer-label { font-size: 14px; color: var(--text2); text-align: left; flex: 1; }
+.items-footer-label { font-size: 14px; color: var(--text2); text-align: right; }
 .items-footer-amount {
-  font-family: var(--font-head);
-  font-size: 22px;
+  font-family: 'Cormorant Garamond', 'Playfair Display', serif;
+  font-size: 24px;
   font-weight: 700;
   color: var(--gold);
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
 }
 
 /* アクション行 */
@@ -868,11 +885,12 @@ body {
   font-size: 18px;
 }
 .login-title {
-  font-family: var(--font-head);
+  font-family: 'Playfair Display', serif;
   font-size: 22px;
   font-weight: 800;
   color: var(--text1);
   letter-spacing: 0.04em;
+  animation: titleWaveGlow 1.8s ease-in-out infinite;
 }
 .login-title span { color: var(--gold); }
 .login-sub {
@@ -1328,8 +1346,8 @@ body {
   .header-left { gap: 6px; }
   .stat-group-btn .stat-num { font-size: 20px; }
   .stat-group-btn .stat-label { font-size: 12px; }
-  .stat-num { font-size: 24px; }
-  .stat-label { font-size: 12px; }
+  .stat-num { font-size: 30px; }
+  .stat-label { font-size: 14px; }
 
   .order-list-v3 { grid-template-columns: 1fr; gap: 8px; }
   .detail-grid-v3 { grid-template-columns: 1fr; }
