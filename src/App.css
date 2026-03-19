@@ -278,7 +278,7 @@ body {
 
 .stat-icon { font-size: 20px; display: block; margin-bottom: 8px; }
 .stat-num {
-  font-family: 'Cormorant Garamond', 'Playfair Display', serif;
+  font-family: 'Playfair Display', Georgia, serif;
   font-size: 36px;
   font-weight: 700;
   color: var(--text1);
@@ -330,7 +330,7 @@ body {
 .stat-group-btn.active::before { opacity: 1; }
 .stat-group-btn .stat-icon { font-size: 16px; display: block; margin-bottom: 4px; }
 .stat-group-btn .stat-num {
-  font-family: 'Cormorant Garamond', 'Playfair Display', serif;
+  font-family: 'Playfair Display', Georgia, serif;
   font-size: 30px;
   font-weight: 700;
   color: var(--text1);
@@ -556,9 +556,10 @@ body {
   flex-shrink: 0;
 }
 .card-amount-v3 {
-  font-family: 'Cormorant Garamond', 'Playfair Display', serif;
+  font-family: 'Playfair Display', Georgia, serif;
   font-size: 28px;
   font-weight: 700;
+  font-style: italic;
   color: var(--gold);
   line-height: 1;
   letter-spacing: 0.02em;
@@ -724,9 +725,10 @@ body {
 }
 .items-footer-label { font-size: 14px; color: var(--text2); text-align: right; }
 .items-footer-amount {
-  font-family: 'Cormorant Garamond', 'Playfair Display', serif;
+  font-family: 'Playfair Display', Georgia, serif;
   font-size: 24px;
   font-weight: 700;
+  font-style: italic;
   color: var(--gold);
   letter-spacing: 0.02em;
   flex-shrink: 0;
