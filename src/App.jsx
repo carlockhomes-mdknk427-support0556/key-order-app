@@ -6,7 +6,7 @@ import Loading from './Loading'
 // ============================================================
 // バージョン・定数
 // ============================================================
-const APP_VERSION  = 'v3.1.2'
+const APP_VERSION  = 'v3.2.0'
 const WORKER_URL   = 'https://web-order.clh-0556-clh.workers.dev'
 const EMAIL_KEY    = 'clh_admin_email'
 
@@ -1561,15 +1561,23 @@ export default function App() {
     return <LoginScreen onLogin={handleLogin} />
   }
 
+  if (loading) {
+    return <Loading />
+  }
+
   const hasSettings = can(role, 'settings')
 
   return (
     <>
-      {loading && <Loading />}
       <div className="app">
         <header className="header">
           <div className="header-left">
-            <Key size={22} color="var(--accent)" />
+            <span className="key-icon-wrap">
+              <span className="key-wave" />
+              <span className="key-wave" />
+              <span className="key-wave" />
+              <Key size={22} color="var(--accent)" style={{position:'relative',zIndex:1}} />
+            </span>
             <span className="header-title">CLH-Support-Bridge</span>
             {totalAlerts > 0 && <span className="header-alert-badge">{totalAlerts}件要対応</span>}
           </div>
@@ -1591,14 +1599,6 @@ export default function App() {
             {can(role, 'add') && (
               <div className="new-order-wrap">
                 <button className="btn-primary btn-primary-lg" onClick={() => setShowForm(true)}><Plus size={18} /> 新規受注</button>
-                <div className="sync-info-below">
-                  {syncError
-                    ? <span style={{color:'#e74c3c'}}>⚠ {syncError}</span>
-                    : lastSync
-                      ? <>最終同期: {formatDate(lastSync.toISOString())}</>
-                      : <span style={{color:'#e67e22'}}>未同期</span>
-                  }
-                </div>
               </div>
             )}
           </div>
