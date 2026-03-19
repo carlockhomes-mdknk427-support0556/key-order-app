@@ -6,7 +6,7 @@ import Loading from './Loading'
 // ============================================================
 // バージョン・定数
 // ============================================================
-const APP_VERSION  = 'v3.2.3'
+const APP_VERSION  = 'v3.2.4'
 const WORKER_URL   = 'https://web-order.clh-0556-clh.workers.dev'
 const EMAIL_KEY    = 'clh_admin_email'
 
@@ -822,7 +822,7 @@ function OrderForm({ initial, onSave, onCancel }) {
           <button className="modal-close" onClick={onCancel}><X size={20} /></button>
         </div>
         <form onSubmit={submit} className="order-form">
-          <div className="inquiry-toggle">
+          <div className="inquiry-toggle full-col">
             <label className="toggle-label">
               <input type="checkbox" name="isInquiry" checked={form.isInquiry || false} onChange={e => { handle(e); if (e.target.checked) setForm(f => ({ ...f, isGuided: false, isSuginami: false })) }} />
               <span>💬 お問合せセクションとして登録</span>
@@ -838,24 +838,24 @@ function OrderForm({ initial, onSave, onCancel }) {
             <p className="toggle-note">チェックなしの場合は受注セクションで処理されます</p>
           </div>
           <label>氏名 <span className="req">*</span><input name="name" value={form.name} onChange={handle} placeholder="田中 太郎" required /></label>
+          <label>電話番号<input name="phone" value={form.phone} onChange={handle} placeholder="090-0000-0000" type="tel" /></label>
           <div className="form-row">
             <label>マンション名<input name="mansion" value={form.mansion} onChange={handle} placeholder="○○マンション" /></label>
-            <label style={{flex:'0 0 120px'}}>部屋番号<input name="room" value={form.room} onChange={handle} placeholder="101" /></label>
+            <label style={{flex:'0 0 140px'}}>部屋番号<input name="room" value={form.room} onChange={handle} placeholder="101" /></label>
           </div>
-          <label>電話番号<input name="phone" value={form.phone} onChange={handle} placeholder="090-0000-0000" type="tel" /></label>
-          <label>メールアドレス<span style={{fontSize:10,color:'var(--text-dim)',marginLeft:6}}>任意・決済案内メール送付に使用</span><input name="email" value={form.email||''} onChange={handle} placeholder="example@email.com" type="email" autoComplete="email" /></label>
-          <label>作業内容<textarea name="work" value={form.work} onChange={handle} placeholder="作業内容を入力..." rows={2} /></label>
+          <label>メールアドレス<span style={{fontSize:12,color:'var(--text3)',marginLeft:8,textTransform:'none',fontWeight:400,letterSpacing:0}}>任意・決済案内メール送付に使用</span><input name="email" value={form.email||''} onChange={handle} placeholder="example@email.com" type="email" autoComplete="email" /></label>
+          <label className="full-col">作業内容<textarea name="work" value={form.work} onChange={handle} placeholder="作業内容を入力..." rows={3} /></label>
           <div className="form-section-title">メーカー・商品選択</div>
-          <div className="maker-tabs">
+          <div className="maker-tabs full-col">
             {MAKERS.map(m => (
               <button key={m.id} type="button" className={`maker-tab ${form.maker === m.id ? 'active' : ''}`} onClick={() => setForm(f => ({ ...f, maker: m.id, items: [], priceOverride: '' }))}>
                 {m.label}{m.taxIncluded && <span className="tax-badge">税込</span>}
               </button>
             ))}
           </div>
-          {form.maker ? <ItemSelector maker={form.maker} items={form.items} onChange={items => setForm(f => ({ ...f, items }))} /> : <div className="maker-hint">↑ メーカーを選択すると商品を追加できます</div>}
+          <div className="full-col">{form.maker ? <ItemSelector maker={form.maker} items={form.items} onChange={items => setForm(f => ({ ...f, items }))} /> : <div className="maker-hint">↑ メーカーを選択すると商品を追加できます</div>}</div>
           {showKeyNumber && (
-            <div className="keynumber-section">
+            <div className="keynumber-section full-col">
               <label className="keynumber-label">
                 🔑 キーナンバー <span className="req">*</span>
                 <input name="keyNumber" value={form.keyNumber} onChange={handle} placeholder="例: KY-1234" className="keynumber-input" autoComplete="off" />
@@ -863,7 +863,7 @@ function OrderForm({ initial, onSave, onCancel }) {
               <p className="keynumber-hint">標準キーの複製に必要なキーナンバーを入力してください</p>
             </div>
           )}
-          <div className="price-summary">
+          <div className="price-summary full-col">
             {isTaxIncluded && <div className="tax-included-notice">💡 シブタニは税込み価格のため消費税計算をスキップします</div>}
             <div className="price-row">
               <label className="price-label">
@@ -881,7 +881,7 @@ function OrderForm({ initial, onSave, onCancel }) {
             </div>
             {!isOverride && !isTaxIncluded && subtotal > 0 && <div className="tax-detail">税抜き ¥{subtotal.toLocaleString()} ＋ 消費税10% ¥{tax.toLocaleString()} ＝ 税込み ¥{total.toLocaleString()}</div>}
           </div>
-          <div className="extra-section">
+          <div className="extra-section full-col">
             <button type="button" className="extra-toggle-btn" onClick={() => setShowExtra(v => !v)}>
               <ChevronRight size={14} style={{ transform: showExtra ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
               その他管理会社（任意）
@@ -894,7 +894,7 @@ function OrderForm({ initial, onSave, onCancel }) {
               </div>
             )}
           </div>
-          <div className="form-buttons">
+          <div className="form-buttons full-col">
             <button type="button" className="btn-cancel" onClick={onCancel}>キャンセル</button>
             <button type="submit" className="btn-save">{initial ? '更新する' : '受注登録'}</button>
           </div>
