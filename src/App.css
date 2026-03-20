@@ -964,11 +964,13 @@ body {
   inset: 0;
   background: rgba(0,0,0,0.75);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 300;
   backdrop-filter: blur(8px);
   padding: 16px;
+  overflow-x: hidden;
+  overflow-y: auto;
   animation: overlayFadeIn 0.35s cubic-bezier(0.25,0.46,0.45,0.94) forwards;
 }
 .modal {
@@ -979,10 +981,13 @@ body {
   border-radius: 20px;
   width: 100%;
   max-width: 700px;
-  max-height: 92vh;
-  overflow-y: auto;
+  max-height: none;
+  overflow-x: hidden;
+  overflow-y: visible;
+  box-sizing: border-box;
   box-shadow: 0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,229,204,0.06), inset 0 1px 0 rgba(255,255,255,0.1);
   animation: fullscreenIn 0.4s cubic-bezier(0.16,1,0.3,1) forwards;
+  margin: auto 0;
 }
 .modal-header {
   display: flex;
@@ -1539,7 +1544,15 @@ body {
   .order-list-v3 { grid-template-columns: 1fr; gap: 8px; }
   .detail-grid-v3 { grid-template-columns: 1fr; }
   .detail-item-v3.full { grid-column: 1; }
-  .modal { border-radius: 16px; max-width: 100%; }
+  .modal-overlay { padding: 0; align-items: flex-start; }
+  .modal {
+    border-radius: 0;
+    max-width: 100vw;
+    width: 100vw;
+    min-height: 100dvh;
+    margin: 0;
+    overflow-x: hidden;
+  }
   .price-row { flex-direction: column; }
   .sales-summary-grid { grid-template-columns: repeat(2, 1fr); }
   .form-row { flex-direction: column; }
