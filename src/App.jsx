@@ -6,7 +6,7 @@ import Loading from './Loading'
 // ============================================================
 // バージョン・定数
 // ============================================================
-const APP_VERSION  = 'v3.2.8'
+const APP_VERSION  = 'v3.2.9'
 const WORKER_URL   = 'https://web-order.clh-0556-clh.workers.dev'
 const EMAIL_KEY    = 'clh_admin_email'
 
@@ -856,15 +856,19 @@ function ItemSelector({ maker, items, onChange }) {
         <div className="item-list">
           {items.map(item => (
             <div key={item.name} className="item-row">
-              <span className="item-name">{item.name}</span>
-              <span className="item-unit-price">¥{item.price.toLocaleString()}</span>
-              <div className="item-qty-ctrl">
-                <button type="button" onClick={() => updateQty(item.name, item.qty - 1)}>－</button>
-                <span>{item.qty}</span>
-                <button type="button" onClick={() => updateQty(item.name, item.qty + 1)}>＋</button>
+              <div className="item-row-top">
+                <span className="item-name">{item.name}</span>
+                <button type="button" className="item-remove" onClick={() => onChange(items.filter(i => i.name !== item.name))}><X size={12} /></button>
               </div>
-              <span className="item-subtotal">¥{(item.price * item.qty).toLocaleString()}</span>
-              <button type="button" className="item-remove" onClick={() => onChange(items.filter(i => i.name !== item.name))}><X size={12} /></button>
+              <div className="item-row-bottom">
+                <span className="item-unit-price">¥{item.price.toLocaleString()}</span>
+                <div className="item-qty-ctrl">
+                  <button type="button" onClick={() => updateQty(item.name, item.qty - 1)}>－</button>
+                  <span>{item.qty}</span>
+                  <button type="button" onClick={() => updateQty(item.name, item.qty + 1)}>＋</button>
+                </div>
+                <span className="item-subtotal">¥{(item.price * item.qty).toLocaleString()}</span>
+              </div>
             </div>
           ))}
         </div>

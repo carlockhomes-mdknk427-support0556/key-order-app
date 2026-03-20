@@ -1305,22 +1305,42 @@ body {
 .item-list { display: flex; flex-direction: column; gap: 6px; }
 .item-row {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 6px;
   padding: 12px 16px;
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 10px;
   font-size: 15px;
 }
+.item-row-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.item-row-bottom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .item-name { flex: 1; color: var(--text1); }
-.item-unit-price { color: var(--text2); font-family: var(--font-mono); width: 90px; text-align: right; font-size: 15px; }
+.item-unit-price { color: var(--text2); font-family: var(--font-mono); font-size: 14px; flex: 1; }
 .item-qty-ctrl { display: flex; align-items: center; gap: 8px; }
 .item-qty-ctrl button { width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--border2); background: var(--card2); color: var(--text1); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
 .item-qty-ctrl span { width: 24px; text-align: center; font-size: 16px; }
-.item-subtotal { font-family: var(--font-mincho); color: var(--gold); font-size: 15px; width: 90px; text-align: right; }
-.item-remove { background: none; border: none; color: var(--text3); cursor: pointer; padding: 4px; transition: color 0.15s; }
-.item-remove:hover { color: var(--danger2); }
+.item-subtotal { font-family: var(--font-mincho); color: var(--gold); font-size: 15px; text-align: right; min-width: 80px; }
+.item-remove {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 6px;
+  color: var(--danger2);
+  cursor: pointer;
+  padding: 5px 7px;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  display: flex; align-items: center;
+}
+.item-remove:hover { background: rgba(239,68,68,0.22); border-color: rgba(239,68,68,0.45); }
 
 /* キーナンバー */
 .keynumber-section { margin-bottom: 0; }
@@ -1580,6 +1600,12 @@ body {
   /* カスタム商品入力：モバイルは縦並び */
   .custom-item-row { flex-direction: column; gap: 8px; }
   .custom-price-input { width: 100%; }
+
+  /* 追加済み商品行：モバイル調整 */
+  .item-row { padding: 10px 12px; gap: 5px; }
+  .item-name { font-size: 14px; }
+  .item-unit-price { font-size: 13px; }
+  .item-subtotal { font-size: 14px; min-width: 70px; }
 
   /* フォームボタン */
   .form-buttons { flex-direction: column; gap: 10px; }
