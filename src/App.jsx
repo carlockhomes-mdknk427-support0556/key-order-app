@@ -6,7 +6,7 @@ import Loading from './Loading'
 // ============================================================
 // バージョン・定数
 // ============================================================
-const APP_VERSION  = 'v3.2.6'
+const APP_VERSION  = 'v3.2.7'
 const WORKER_URL   = 'https://web-order.clh-0556-clh.workers.dev'
 const EMAIL_KEY    = 'clh_admin_email'
 
@@ -315,6 +315,45 @@ function LoginScreen({ onLogin }) {
 }
 
 // ============================================================
+// 確認ダイアログ
+// ============================================================
+function Dialog({ icon, title, message, buttons }) {
+  return (
+    <div className="dialog-overlay">
+      <div className="dialog-box">
+        {icon && <span className="dialog-icon">{icon}</span>}
+        {title && <div className="dialog-title">{title}</div>}
+        {message && <div className="dialog-message">{message}</div>}
+        <div className="dialog-buttons">
+          {buttons.map((b, i) => (
+            <button key={i} className={`dialog-btn ${b.variant || 'default'}`} onClick={b.onClick}>
+              {b.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function useConfirm() {
+  const [dialog, setDialog] = useState(null)
+  const showDialog = useCallback(({ icon, title, message, buttons }) => {
+    return new Promise(resolve => {
+      setDialog({
+        icon, title, message,
+        buttons: buttons.map(b => ({
+          ...b,
+          onClick: () => { setDialog(null); resolve(b.value) }
+        }))
+      })
+    })
+  }, [])
+  const DialogEl = dialog ? <Dialog {...dialog} /> : null
+  return { showDialog, DialogEl }
+}
+
+// ============================================================
 // COMPONENTS
 // ============================================================
 function StatusCard({ status, count, onClick, active }) {
@@ -342,6 +381,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
   const [mailSending, setMailSending]   = useState(false)
   const [mailMsg, setMailMsg]           = useState('')
   const [paymentUrl, setPaymentUrl]     = useState('')
+  const { showDialog, DialogEl }        = useConfirm()
   const [paymentLoading, setPaymentLoading] = useState(false)
   const [paymentMsg, setPaymentMsg]     = useState('')
   const [showPayPanel, setShowPayPanel] = useState(false)
@@ -415,7 +455,15 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
 
   // freee領収書直接発行
   async function issueFreeeReceipt() {
-    if (!confirm('freeeで領収書を発行しますか？\n\n金額：¥' + Number(order.amount).toLocaleString() + '（税込）')) return
+    const ok = await showDialog({
+      icon: '🧾', title: 'freee 領収書発行',
+      message: '金額：¥' + Number(order.amount).toLocaleString() + '（税込）\n\nfreeeで領収書を発行しますか？',
+      buttons: [
+        { label: '発行する', value: true, variant: 'primary' },
+        { label: 'キャンセル', value: false, variant: 'default' },
+      ]
+    })
+    if (!ok) return
     setReceiptLoading(true)
     try {
       const res = await fetch(WORKER_URL + '/freee/receipt', {
@@ -450,7 +498,15 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
   // メール送信
   async function sendPaymentMail() {
     if (!hasEmail) return
-    if (!confirm('決済案内メールを送信しますか？\n\n宛先: ' + customerEmail)) return
+    const ok = await showDialog({
+      icon: '✉️', title: '決済案内メールを送信',
+      message: '宛先: ' + customerEmail + '\n\nこの宛先にメールを送信しますか？',
+      buttons: [
+        { label: '送信する', value: true, variant: 'primary' },
+        { label: 'キャンセル', value: false, variant: 'default' },
+      ]
+    })
+    if (!ok) return
     setMailSending(true)
     const res = await apiCall({
       action:     'send_payment_mail',
@@ -472,6 +528,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
 
   return (
     <>
+    {DialogEl}
     {/* リスト内カード */}
     <div className={`order-card-v3${alertInfo ? ' has-alert' : ''}${isLockedByOther ? ' locked-by-other' : ''}`} onClick={handleExpand}>
       {alertInfo && (
@@ -626,9 +683,29 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
                   <button className="ctrl-btn-v3 done-btn" onClick={() => onStatusChange(order.id, 'done')}><Check size={14}/> 完了</button>
                 )}
                 {order.status !== 'cancelled' && (
-                  <button className="ctrl-btn-v3 cancel-btn" onClick={() => onCancel(order.id)}><XCircle size={14}/> キャンセル</button>
+                  <button className="ctrl-btn-v3 cancel-btn" onClick={async () => {
+                    const ok = await showDialog({
+                      icon: '⚠️', title: 'キャンセルにしますか？',
+                      message: order.name + ' 様の受注をキャンセルステータスに変更します。',
+                      buttons: [
+                        { label: 'キャンセルにする', value: true, variant: 'danger' },
+                        { label: '戻る', value: false, variant: 'default' },
+                      ]
+                    })
+                    if (ok) onCancel(order.id)
+                  }}><XCircle size={14}/> キャンセル</button>
                 )}
-                {canDelete && <button className="ctrl-btn-v3 del-btn" onClick={() => onDelete(order.id)}><X size={14}/> 削除</button>}
+                {canDelete && <button className="ctrl-btn-v3 del-btn" onClick={async () => {
+                  const ok = await showDialog({
+                    icon: '🗑️', title: 'この受注を削除しますか？',
+                    message: order.name + ' 様の受注を削除します。\n「設定 > 削除済み」から復元できます。',
+                    buttons: [
+                      { label: '削除する', value: true, variant: 'danger' },
+                      { label: 'キャンセル', value: false, variant: 'default' },
+                    ]
+                  })
+                  if (ok) onDelete(order.id)
+                }}><X size={14}/> 削除</button>}
                 {showPayButton && (
                   <button className="ctrl-btn-v3 pay-btn" onClick={() => setShowPayPanel(true)}>💳 決済</button>
                 )}
@@ -797,12 +874,16 @@ function ItemSelector({ maker, items, onChange }) {
 }
 
 function OrderForm({ initial, onSave, onCancel }) {
-  const [form, setForm]       = useState({ ...(initial || EMPTY_FORM), items: initial?.items || [], priceOverride: initial?.priceOverride || '', maker: initial?.maker || '' })
+  const initialForm = { ...(initial || EMPTY_FORM), items: initial?.items || [], priceOverride: initial?.priceOverride || '', maker: initial?.maker || '' }
+  const [form, setForm]       = useState(initialForm)
   const [showExtra, setShowExtra] = useState(!!(initial?.keyNumber || initial?.clientName || initial?.clientPhone || initial?.clientAddress))
+  const { showDialog, DialogEl } = useConfirm()
   const makerObj      = MAKERS.find(m => m.id === form.maker)
   const taxIncluded   = makerObj?.taxIncluded || false
   const showKeyNumber = shouldShowKeyNumber(form.maker, form.items)
   const { subtotal, tax, total, isOverride, taxIncluded: isTaxIncluded } = calcAmounts(form.items, form.priceOverride, taxIncluded)
+
+  const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm)
 
   function handle(e) {
     const val = e.target.type === 'checkbox' ? e.target.checked : e.target.value
@@ -810,18 +891,52 @@ function OrderForm({ initial, onSave, onCancel }) {
     setForm(f => ({ ...f, [e.target.name]: val }))
   }
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault()
-    if (!form.name.trim()) return alert('氏名を入力してください')
+    if (!form.name.trim()) {
+      await showDialog({
+        icon: '⚠️', title: '入力エラー',
+        message: '氏名を入力してください',
+        buttons: [{ label: 'OK', value: true, variant: 'primary' }]
+      })
+      return
+    }
     onSave({ ...form, amount: String(total) })
   }
 
+  async function handleClose() {
+    if (!isDirty) { onCancel(); return }
+    const result = await showDialog({
+      icon: '💾', title: '変更を保存しますか？',
+      message: '入力内容が保存されていません。\nどうしますか？',
+      buttons: [
+        { label: '保存して閉じる',      value: 'save',    variant: 'primary' },
+        { label: '保存しないで閉じる',  value: 'discard', variant: 'danger'  },
+        { label: '戻って編集を続ける',  value: 'cancel',  variant: 'default' },
+      ]
+    })
+    if (result === 'save') {
+      if (!form.name.trim()) {
+        await showDialog({
+          icon: '⚠️', title: '入力エラー',
+          message: '氏名を入力してください',
+          buttons: [{ label: 'OK', value: true, variant: 'primary' }]
+        })
+        return
+      }
+      onSave({ ...form, amount: String(total) })
+    } else if (result === 'discard') {
+      onCancel()
+    }
+  }
+
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onCancel()}>
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && handleClose()}>
+      {DialogEl}
       <div className="modal" style={{maxWidth:1320}}>
         <div className="modal-header">
           <h2>{initial ? '受注編集' : '新規受注'}</h2>
-          <button className="modal-close" onClick={onCancel}><X size={20} /></button>
+          <button className="modal-close" onClick={handleClose}><X size={20} /></button>
         </div>
         <form onSubmit={submit} className="order-form">
           <div className="inquiry-toggle full-col">
@@ -897,7 +1012,7 @@ function OrderForm({ initial, onSave, onCancel }) {
             )}
           </div>
           <div className="form-buttons full-col">
-            <button type="button" className="btn-cancel" onClick={onCancel}>キャンセル</button>
+            <button type="button" className="btn-cancel" onClick={handleClose}>キャンセル</button>
             <button type="submit" className="btn-save">{initial ? '更新する' : '受注登録'}</button>
           </div>
         </form>
@@ -1043,6 +1158,7 @@ function UsersTab() {
   const [loading, setLoading]   = useState(true)
   const [msg, setMsg]           = useState('')
   const [msgType, setMsgType]   = useState('ok') // 'ok' | 'err'
+  const { showDialog, DialogEl } = useConfirm()
   // 直接追加フォーム
   const [addEmail, setAddEmail] = useState('')
   const [addRole,  setAddRole]  = useState('staff')
@@ -1085,7 +1201,15 @@ function UsersTab() {
   }
 
   async function reject(email) {
-    if (!confirm(email + ' を削除しますか？')) return
+    const ok = await showDialog({
+      icon: '🗑️', title: 'ユーザーを削除しますか？',
+      message: email + '\n\nこのユーザーを削除します。この操作は取り消せません。',
+      buttons: [
+        { label: '削除する', value: true, variant: 'danger' },
+        { label: 'キャンセル', value: false, variant: 'default' },
+      ]
+    })
+    if (!ok) return
     const res = await apiCall({ action: 'reject_user', email })
     if (res.status === 'ok') {
       setUsers(prev => prev.filter(u => u.email !== email))
@@ -1102,6 +1226,7 @@ function UsersTab() {
 
   return (
     <div className="settings-section">
+      {DialogEl}
       {msg && <div className="settings-save-msg" style={{background: msgType === 'err' ? 'rgba(231,76,60,0.15)' : undefined, color: msgType === 'err' ? '#e74c3c' : undefined}}>{msg}</div>}
 
       {/* 直接追加フォーム */}
@@ -1496,7 +1621,6 @@ export default function App() {
 
   // 論理削除（個別POST）
   async function deleteOrder(id) {
-    if (!confirm('この受注を削除しますか？\n\n「設定 > 削除済み」から復元できます。')) return
     const target = orders.find(o => o.id === id)
     if (!target) return
     const prevOrders  = orders
@@ -1514,7 +1638,6 @@ export default function App() {
 
   // キャンセル（ステータス変更）
   async function cancelOrder(id) {
-    if (!confirm('この受注をキャンセルにしますか？')) return
     await changeStatus(id, 'cancelled')
   }
 

@@ -1006,6 +1006,96 @@ body {
 .modal-close:hover { background: var(--card2); color: var(--text1); }
 
 /* ============================================================
+   確認ダイアログ
+   ============================================================ */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: overlayFadeIn 0.18s ease forwards;
+}
+.dialog-box {
+  background: #0d1e35;
+  border: 1px solid rgba(0,229,204,0.2);
+  border-radius: 18px;
+  padding: 32px 28px 24px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6), 0 0 40px rgba(0,229,204,0.06);
+  animation: fullscreenIn 0.22s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+.dialog-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  display: block;
+}
+.dialog-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text1);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+.dialog-message {
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.7;
+  margin-bottom: 24px;
+  white-space: pre-wrap;
+}
+.dialog-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dialog-btn {
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all 0.18s;
+  font-family: var(--font-body);
+}
+.dialog-btn.primary {
+  background: rgba(0,229,204,0.15);
+  border-color: rgba(0,229,204,0.5);
+  color: var(--teal-glow);
+}
+.dialog-btn.primary:hover {
+  background: rgba(0,229,204,0.25);
+  border-color: rgba(0,229,204,0.8);
+  box-shadow: 0 0 16px rgba(0,229,204,0.2);
+}
+.dialog-btn.danger {
+  background: rgba(239,68,68,0.1);
+  border-color: rgba(239,68,68,0.35);
+  color: var(--danger2);
+}
+.dialog-btn.danger:hover {
+  background: rgba(239,68,68,0.2);
+  border-color: rgba(239,68,68,0.6);
+}
+.dialog-btn.default {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.12);
+  color: var(--text2);
+}
+.dialog-btn.default:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.2);
+  color: var(--text1);
+}
+
+/* ============================================================
    フォーム
    ============================================================ */
 .order-form {
