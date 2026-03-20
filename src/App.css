@@ -1454,6 +1454,33 @@ body {
   .sales-summary-grid { grid-template-columns: repeat(2, 1fr); }
   .form-row { flex-direction: column; }
   .col-unit { display: none; }
+
+  /* フォーム：モバイルは1列 */
+  .order-form {
+    grid-template-columns: 1fr;
+    padding: 18px 16px 24px;
+    gap: 16px;
+  }
+  .order-form .full-col { grid-column: span 1; }
+  .form-section-title { grid-column: span 1; }
+
+  /* チェックボックス：モバイルは縦並び */
+  .inquiry-toggle {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .toggle-note { grid-column: span 1; }
+
+  /* 商品チップ：パディング縮小 */
+  .product-chip-area { padding: 12px 12px; }
+
+  /* カスタム商品入力：モバイルは縦並び */
+  .custom-item-row { flex-direction: column; gap: 8px; }
+  .custom-price-input { width: 100%; }
+
+  /* フォームボタン */
+  .form-buttons { flex-direction: column; gap: 10px; }
+  .btn-save, .btn-cancel { width: 100%; }
   .card-amount-v3 { font-size: 18px; }
   .card-name-v3 { font-size: 16px; }
 
