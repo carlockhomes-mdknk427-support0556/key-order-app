@@ -354,6 +354,37 @@ function useConfirm() {
 }
 
 // ============================================================
+// セッション失効警告オーバーレイ
+// ============================================================
+function StaleSessionWarning({ onReload, onReLogin }) {
+  return (
+    <div className="stale-overlay">
+      <div className="stale-box">
+        <div className="stale-skull">☠️</div>
+        <div className="stale-title">⚠ セッション失効 ⚠</div>
+        <div className="stale-subtitle">データ破損の危険性があります</div>
+        <p className="stale-body">
+          ページが長時間放置されたため、<br />
+          ローカルデータとサーバーデータが<br />
+          <strong>不整合になっている可能性があります。</strong><br /><br />
+          このまま編集・追加・ステータス変更を行うと<br />
+          <span className="stale-danger-text">データが上書き・破損するリスクがあります。</span>
+        </p>
+        <div className="stale-actions">
+          <button className="stale-btn stale-btn-reload" onClick={onReload}>
+            🔄 ページをリロード
+          </button>
+          <button className="stale-btn stale-btn-login" onClick={onReLogin}>
+            🔐 再ログイン
+          </button>
+        </div>
+        <div className="stale-note">※ 閲覧のみ継続可能です</div>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================
 // COMPONENTS
 // ============================================================
 function StatusCard({ status, count, onClick, active }) {
@@ -1474,6 +1505,7 @@ export default function App() {
   const [search,       setSearch]         = useState('')
   const [loading,      setLoading]        = useState(true)
   const [locks,        setLocks]          = useState({}) // { orderId: { email, lockedAt } }
+  const [staleSession, setStaleSession]   = useState(false)
 
   // 受注データをlocalStorageにキャッシュ
   useEffect(() => { localStorage.setItem('key_orders', JSON.stringify(orders)) }, [orders])
@@ -1566,6 +1598,23 @@ export default function App() {
     window.addEventListener('beforeunload', handleUnload)
     return () => window.removeEventListener('beforeunload', handleUnload)
   }, [locks])
+  // ページ放置検出（30分以上非表示→セッション失効フラグ）
+  useEffect(() => {
+    if (!authed) return
+    const STALE_MS = 30 * 60 * 1000
+    let hiddenAt = null
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now()
+      } else if (document.visibilityState === 'visible' && hiddenAt !== null) {
+        if (Date.now() - hiddenAt >= STALE_MS) setStaleSession(true)
+        hiddenAt = null
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [authed])
+
   useEffect(() => {
     if (!syncError) return
     const t = setTimeout(() => setSyncError(''), 10000)
@@ -1575,12 +1624,14 @@ export default function App() {
   function handleLogin(newRole) {
     setRole(newRole)
     setAuthed(true)
+    setStaleSession(false)
   }
 
   function handleLogout() {
     clearToken(); clearRoleSession(); clearUserEmail()
     setAuthed(false); setRole('')
     setShowSettings(false)
+    setStaleSession(false)
   }
 
   async function pullFromGAS() {
@@ -1596,6 +1647,7 @@ export default function App() {
 
   // 新規受注（個別POST → GAS直接書き込み）
   async function addOrder(form) {
+    if (staleSession) return
     const status   = form.isSuginami ? 'suginami' : form.isGuided ? 'guided' : form.isInquiry ? 'inquiry' : 'order'
     const newOrder = { ...form, id: generateId(), status, createdAt: new Date().toISOString() }
     setOrders(prev => [newOrder, ...prev])
@@ -1611,6 +1663,7 @@ export default function App() {
 
   // 受注編集（全フィールド更新）
   async function updateOrder(form) {
+    if (staleSession) return
     const updated = { ...editingOrder, ...form }
     const prev = orders
     setOrders(orders.map(o => o.id === editingOrder.id ? updated : o))
@@ -1666,6 +1719,7 @@ export default function App() {
 
   // ステータス変更（個別POST）
   async function changeStatus(id, newStatus) {
+    if (staleSession) return
     const prev = orders
     setOrders(orders.map(o => o.id === id ? { ...o, status: newStatus } : o))
     const res = await apiCall({ action: 'update_status', id, status: newStatus })
@@ -1707,6 +1761,12 @@ export default function App() {
 
   return (
     <>
+      {staleSession && (
+        <StaleSessionWarning
+          onReload={() => window.location.reload()}
+          onReLogin={() => { handleLogout() }}
+        />
+      )}
       <div className="app">
         <header className="header">
           <div className="header-left">
