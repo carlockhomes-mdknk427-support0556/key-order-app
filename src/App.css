@@ -780,6 +780,8 @@ body {
 }
 .ctrl-btn-v3:hover { background: var(--card2); color: var(--text1); }
 .ctrl-btn-v3:disabled { opacity: 0.4; cursor: not-allowed; }
+.ctrl-btn-v3.edit-btn { background: rgba(59,130,246,0.1); color: #60a5fa; border-color: rgba(59,130,246,0.25); }
+.ctrl-btn-v3.edit-btn:hover { background: rgba(59,130,246,0.18); }
 .ctrl-btn-v3.done-btn { background: rgba(16,185,129,0.08); color: var(--success2); border-color: rgba(16,185,129,0.18); }
 .ctrl-btn-v3.done-btn:hover { background: rgba(16,185,129,0.15); }
 .ctrl-btn-v3.cancel-btn { background: rgba(239,68,68,0.05); color: var(--danger2); border-color: rgba(239,68,68,0.15); }

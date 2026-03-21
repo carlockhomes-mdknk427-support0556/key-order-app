@@ -678,7 +678,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
                 })}
               </div>
               <div className="ctrl-btns-v3">
-                {canEdit && <button className="ctrl-btn-v3" onClick={() => onEdit(order)} disabled={isLockedByOther}>編集</button>}
+                {canEdit && <button className="ctrl-btn-v3 edit-btn" onClick={() => onEdit(order)} disabled={isLockedByOther}>編集</button>}
                 {order.status !== 'done' && order.status !== 'cancelled' && (
                   <button className="ctrl-btn-v3 done-btn" onClick={() => onStatusChange(order.id, 'done')}><Check size={14}/> 完了</button>
                 )}
@@ -1482,6 +1482,7 @@ export default function App() {
   // 編集中はポーリングをスキップして編集画面が閉じないようにする
   useEffect(() => {
     if (!authed) { setLoading(false); return }
+    setLoading(true)
     const startTime = Date.now()
     const finishLoading = () => {
       const remain = Math.max(0, 1500 - (Date.now() - startTime))
