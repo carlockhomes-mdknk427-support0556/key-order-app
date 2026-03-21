@@ -1601,7 +1601,7 @@ export default function App() {
   // ページ放置検出（30分以上非表示→セッション失効フラグ）
   useEffect(() => {
     if (!authed) return
-    const STALE_MS = 30 * 60 * 1000
+    const STALE_MS = 9 * 60 * 60 * 1000
     let hiddenAt = null
     const handleVisibility = () => {
       if (document.visibilityState === 'hidden') {

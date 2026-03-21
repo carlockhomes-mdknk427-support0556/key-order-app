@@ -786,8 +786,8 @@ body {
 .ctrl-btn-v3.done-btn:hover { background: rgba(16,185,129,0.15); }
 .ctrl-btn-v3.cancel-btn { background: rgba(239,68,68,0.05); color: var(--danger2); border-color: rgba(239,68,68,0.15); }
 .ctrl-btn-v3.del-btn { background: rgba(239,68,68,0.06); color: var(--danger2); border-color: rgba(239,68,68,0.12); }
-.ctrl-btn-v3.pay-btn { background: rgba(240,165,0,0.1); color: var(--gold); border-color: rgba(240,165,0,0.2); }
-.ctrl-btn-v3.pay-btn:hover { background: rgba(240,165,0,0.18); }
+.ctrl-btn-v3.pay-btn { background: #ffffff; color: #111111; border-color: #cccccc; font-weight: 600; }
+.ctrl-btn-v3.pay-btn:hover { background: #f0f0f0; color: #000000; border-color: #aaaaaa; }
 
 /* 決済パネル */
 .pay-panel {
