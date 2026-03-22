@@ -2,6 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Key, Plus, X, ChevronRight, ArrowRight, Loader2, RefreshCw, Settings, Search, AlertTriangle, LogOut, RotateCcw, Lock, Check, XCircle } from 'lucide-react'
 import './App.css'
 import Loading from './Loading'
+import {
+  getStatusIcon, PayMsg,
+  IconKey, IconWarning, IconTrash, IconSave, IconReceipt, IconMail,
+  IconCreditCard, IconLink, IconDocument, IconChat, IconEmailSend,
+  IconPhone, IconLock, IconReload, IconSkull, IconPencil,
+  IconClipboard, IconBuilding, IconLightbulb, IconDownload,
+  IconInfo, IconGearSettings, IconUsers, IconChart, IconPlusAnim,
+  IconHourglass, IconSuccess,
+} from './AnimatedIcons'
 
 // ============================================================
 // バージョン・定数
@@ -25,15 +34,15 @@ const ROLE_LABELS = { master: 'マスター', sales: '売上管理', staff: 'ス
 // ステータス・アラート・メーカー定義
 // ============================================================
 const STATUSES = [
-  { id: 'inquiry',   label: 'お問合せ',      color: '#ff7c1a', bg: 'rgba(255,124,26,0.18)',  icon: '💬' },
-  { id: 'guided',    label: '案内済み',      color: '#ffd000', bg: 'rgba(255,208,0,0.18)',   icon: '📋' },
-  { id: 'suginami',  label: '杉並電話受付',  color: '#00f0c8', bg: 'rgba(0,240,200,0.18)',   icon: '🏢' },
-  { id: 'order',     label: '受注',          color: '#ff5722', bg: 'rgba(255,87,34,0.18)',   icon: '📥' },
-  { id: 'arranged',  label: '手配済み',      color: '#cc66ff', bg: 'rgba(204,102,255,0.18)', icon: '🏭' },
-  { id: 'arrived',   label: '入荷済み',      color: '#2196ff', bg: 'rgba(33,150,255,0.18)',  icon: '📦' },
-  { id: 'appt',      label: '作業アポ済み',  color: '#00e676', bg: 'rgba(0,230,118,0.18)',   icon: '📅' },
-  { id: 'done',      label: '完了',          color: '#ccdde0', bg: 'rgba(204,221,224,0.18)', icon: '✅' },
-  { id: 'cancelled', label: 'キャンセル',    color: '#ff3d33', bg: 'rgba(255,61,51,0.18)',   icon: '❌' },
+  { id: 'inquiry',   label: 'お問合せ',      color: '#ff7c1a', bg: 'rgba(255,124,26,0.18)'  },
+  { id: 'guided',    label: '案内済み',      color: '#ffd000', bg: 'rgba(255,208,0,0.18)'   },
+  { id: 'suginami',  label: '杉並電話受付',  color: '#00f0c8', bg: 'rgba(0,240,200,0.18)'   },
+  { id: 'order',     label: '受注',          color: '#ff5722', bg: 'rgba(255,87,34,0.18)'   },
+  { id: 'arranged',  label: '手配済み',      color: '#cc66ff', bg: 'rgba(204,102,255,0.18)' },
+  { id: 'arrived',   label: '入荷済み',      color: '#2196ff', bg: 'rgba(33,150,255,0.18)'  },
+  { id: 'appt',      label: '作業アポ済み',  color: '#00e676', bg: 'rgba(0,230,118,0.18)'   },
+  { id: 'done',      label: '完了',          color: '#ccdde0', bg: 'rgba(204,221,224,0.18)' },
+  { id: 'cancelled', label: 'キャンセル',    color: '#ff3d33', bg: 'rgba(255,61,51,0.18)'   },
 ]
 
 const STATUS_TRANSITIONS = {
@@ -77,7 +86,7 @@ const MAKER_PRODUCTS = {
     ]},
   ],
   shibutani: [
-    { group: '🔑 カギ類', items: [
+    { group: 'カギ類', items: [
       { name: 'Tebraキー',              price: 15400 },
       { name: 'Tebra収納キー（新旧あり）', price: 6600  },
       { name: 'F22 TLキー',             price: 7100  },
@@ -86,15 +95,15 @@ const MAKER_PRODUCTS = {
       { name: 'F22 標準キー',            price: 3900  },
       { name: 'T20 標準キー',            price: 3900  },
     ]},
-    { group: '🏷️ タグ類', items: [
+    { group: 'タグ類', items: [
       { name: 'Tebraタグ', price: 11500 },
       { name: 'TLタグ',    price: 3200  },
     ]},
-    { group: '💳 カード類', items: [
+    { group: 'カード類', items: [
       { name: 'TLカード', price: 3200 },
       { name: 'TFカード', price: 3900 },
     ]},
-    { group: '🔧 作業費・手数料類', items: [
+    { group: '作業費・手数料類', items: [
       { name: '出張費',                 price: 8000  },
       { name: '交換作業費（シリンダー）',  price: 8000  },
       { name: '交換作業費（収納キー）',    price: 5000  },
@@ -296,7 +305,7 @@ function LoginScreen({ onLogin }) {
           </>
         ) : (
           <>
-            <div className="login-request-title">🔐 アクセス申請</div>
+            <div className="login-request-title"><IconLock size={16} /> アクセス申請</div>
             <p className="login-request-note">申請後、管理者が承認するとログインできます</p>
             <input className="login-input" type="email"    placeholder="メールアドレス" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={onKeyDown} autoComplete="email" />
             <input className="login-input" type="password" placeholder="パスワード（6文字以上）" value={pass} onChange={e => setPass(e.target.value)} onKeyDown={onKeyDown} autoComplete="new-password" />
@@ -360,8 +369,8 @@ function StaleSessionWarning({ onReload, onReLogin }) {
   return (
     <div className="stale-overlay">
       <div className="stale-box">
-        <div className="stale-skull">☠️</div>
-        <div className="stale-title">⚠ セッション失効 ⚠</div>
+        <div className="stale-skull"><IconSkull size={72} /></div>
+        <div className="stale-title"><IconWarning size={18} /> セッション失効 <IconWarning size={18} /></div>
         <div className="stale-subtitle">データ破損の危険性があります</div>
         <p className="stale-body">
           ページが長時間放置されたため、<br />
@@ -372,10 +381,10 @@ function StaleSessionWarning({ onReload, onReLogin }) {
         </p>
         <div className="stale-actions">
           <button className="stale-btn stale-btn-reload" onClick={onReload}>
-            🔄 ページをリロード
+            <IconReload size={16} /> ページをリロード
           </button>
           <button className="stale-btn stale-btn-login" onClick={onReLogin}>
-            🔐 再ログイン
+            <IconLock size={16} /> 再ログイン
           </button>
         </div>
         <div className="stale-note">※ 閲覧のみ継続可能です</div>
@@ -390,7 +399,7 @@ function StaleSessionWarning({ onReload, onReLogin }) {
 function StatusCard({ status, count, onClick, active }) {
   return (
     <button onClick={onClick} className={`stat-card${active ? ' active' : ''}`} style={{'--c': status.color}}>
-      <span className="stat-icon">{status.icon}</span>
+      <span className="stat-icon">{getStatusIcon(status.id)}</span>
       <div className="stat-num">{count}</div>
       <div className="stat-label">{status.label}</div>
     </button>
@@ -402,7 +411,7 @@ function AlertCard({ alert, count, onClick, active }) {
   return (
     <button onClick={onClick} className={`alert-chip${active ? ' active' : ''}`}
       style={{background:'rgba(239,68,68,0.08)',borderColor:'rgba(239,68,68,0.2)',color:'#fca5a5'}}>
-      ⚠ {alert.label} <strong>{count}</strong>
+      <IconWarning size={11} /> {alert.label} <strong>{count}</strong>
     </button>
   )
 }
@@ -487,7 +496,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
   // freee領収書直接発行
   async function issueFreeeReceipt() {
     const ok = await showDialog({
-      icon: '🧾', title: 'freee 領収書発行',
+      icon: <IconReceipt size={28} />, title: 'freee 領収書発行',
       message: '金額：¥' + Number(order.amount).toLocaleString() + '（税込）\n\nfreeeで領収書を発行しますか？',
       buttons: [
         { label: '発行する', value: true, variant: 'primary' },
@@ -530,7 +539,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
   async function sendPaymentMail() {
     if (!hasEmail) return
     const ok = await showDialog({
-      icon: '✉️', title: '決済案内メールを送信',
+      icon: <IconMail size={28} />, title: '決済案内メールを送信',
       message: '宛先: ' + customerEmail + '\n\nこの宛先にメールを送信しますか？',
       buttons: [
         { label: '送信する', value: true, variant: 'primary' },
@@ -569,7 +578,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
       )}
       {isLockedByOther && (
         <div className="card-lock-strip">
-          🔒 {lock.email} が編集中です
+          <IconLock size={13} /> {lock.email} が編集中です
         </div>
       )}
       <div className="card-header-v3">
@@ -615,7 +624,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
           </div>
 
           {isLockedByMe && (
-            <div className="card-editing-strip">✏️ あなたが編集中</div>
+            <div className="card-editing-strip"><IconPencil size={13} /> あなたが編集中</div>
           )}
 
           <div className="card-body-v3">
@@ -716,7 +725,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
                 {order.status !== 'cancelled' && (
                   <button className="ctrl-btn-v3 cancel-btn" onClick={async () => {
                     const ok = await showDialog({
-                      icon: '⚠️', title: 'キャンセルにしますか？',
+                      icon: <IconWarning size={28} />, title: 'キャンセルにしますか？',
                       message: order.name + ' 様の受注をキャンセルステータスに変更します。',
                       buttons: [
                         { label: 'キャンセルにする', value: true, variant: 'danger' },
@@ -728,7 +737,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
                 )}
                 {canDelete && <button className="ctrl-btn-v3 del-btn" onClick={async () => {
                   const ok = await showDialog({
-                    icon: '🗑️', title: 'この受注を削除しますか？',
+                    icon: <IconTrash size={28} />, title: 'この受注を削除しますか？',
                     message: order.name + ' 様の受注を削除します。\n「設定 > 削除済み」から復元できます。',
                     buttons: [
                       { label: '削除する', value: true, variant: 'danger' },
@@ -738,7 +747,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
                   if (ok) onDelete(order.id)
                 }}><X size={14}/> 削除</button>}
                 {showPayButton && (
-                  <button className="ctrl-btn-v3 pay-btn" onClick={() => setShowPayPanel(true)}>💳 決済</button>
+                  <button className="ctrl-btn-v3 pay-btn" onClick={() => setShowPayPanel(true)}><IconCreditCard size={14} /> 決済</button>
                 )}
               </div>
             </div>
@@ -752,7 +761,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
         <div className="modal-overlay pay-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowPayPanel(false) }}>
           <div className="modal pay-modal">
             <div className="modal-header">
-              <h2>💳 {order.name} 様 — 決済</h2>
+              <h2><IconCreditCard size={18} /> {order.name} 様 — 決済</h2>
               <button className="modal-close" onClick={() => setShowPayPanel(false)}><X size={20} /></button>
             </div>
             <div style={{padding:'16px 20px 28px',display:'flex',flexDirection:'column',gap:12}}>
@@ -764,7 +773,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
                 onClick={generatePaymentLink}
                 disabled={paymentLoading}
               >
-                {paymentLoading ? <Loader2 size={14} style={{animation:'spin 1s linear infinite'}} /> : '🔗 Square決済リンクを生成'}
+                {paymentLoading ? <Loader2 size={14} style={{animation:'spin 1s linear infinite'}} /> : <><IconLink size={14} /> Square決済リンクを生成</>}
               </button>
 
               {paymentUrl && (
@@ -772,13 +781,13 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
                   <div style={{display:'flex',gap:6,alignItems:'center',background:'rgba(0,0,0,0.2)',borderRadius:8,padding:'8px 10px'}}>
                     <span style={{fontSize:10,color:'rgba(255,255,255,0.5)',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',fontFamily:'monospace'}}>{paymentUrl}</span>
                     <button style={{flexShrink:0,fontSize:11,padding:'4px 10px',background:'rgba(255,255,255,0.1)',border:'none',borderRadius:6,color:'#fff',cursor:'pointer'}}
-                      onClick={() => { navigator.clipboard?.writeText(paymentUrl); setPaymentMsg('✅ URLをコピーしました') }}>📋 コピー</button>
+                      onClick={() => { navigator.clipboard?.writeText(paymentUrl); setPaymentMsg('✅ URLをコピーしました') }}><IconDocument size={12} /> コピー</button>
                   </div>
                   <div style={{display:'flex',gap:8}}>
-                    <button className="ctrl-btn" style={{background:'rgba(6,214,160,0.15)',color:'#06d6a0',borderColor:'rgba(6,214,160,0.3)',flex:1,justifyContent:'center'}} onClick={openLine}>💬 LINEで送る</button>
+                    <button className="ctrl-btn" style={{background:'rgba(6,214,160,0.15)',color:'#06d6a0',borderColor:'rgba(6,214,160,0.3)',flex:1,justifyContent:'center'}} onClick={openLine}><IconChat size={13} /> LINEで送る</button>
                     {hasEmail && (
                       <button className="ctrl-btn" style={{background:'rgba(52,152,219,0.15)',color:'#3498db',borderColor:'rgba(52,152,219,0.3)',flex:1,justifyContent:'center'}} onClick={sendPaymentMail} disabled={mailSending}>
-                        {mailSending ? <Loader2 size={12} style={{animation:'spin 1s linear infinite'}} /> : '📧 メールで送る'}
+                        {mailSending ? <Loader2 size={12} style={{animation:'spin 1s linear infinite'}} /> : <><IconEmailSend size={13} /> メールで送る</>}
                       </button>
                     )}
                   </div>
@@ -789,7 +798,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
                 className="ctrl-btn"
                 style={{background:'rgba(255,255,255,0.07)',color:'rgba(255,255,255,0.7)',borderColor:'rgba(255,255,255,0.1)',width:'100%',justifyContent:'center',padding:'12px 0'}}
                 onClick={() => window.open('square-commerce-v1://payment/create?amount=' + Math.round(Number(order.amount)||0) + '&currency_code=JPY&description=' + encodeURIComponent(order.id), '_blank')}
-              >📱 Squareアプリでタッチ決済</button>
+              ><IconPhone size={14} /> Squareアプリでタッチ決済</button>
 
               <div style={{borderTop:'1px solid rgba(255,255,255,0.08)',paddingTop:12}}>
                 <div style={{fontSize:11,color:'rgba(255,255,255,0.35)',marginBottom:8}}>現金・振込・対面カード決済後</div>
@@ -798,18 +807,18 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
                   style={{background:'rgba(0,132,132,0.15)',color:'#00b2b2',borderColor:'rgba(0,178,178,0.3)',width:'100%',justifyContent:'center',padding:'12px 0'}}
                   onClick={issueFreeeReceipt} disabled={receiptLoading}
                 >
-                  {receiptLoading ? <Loader2 size={14} style={{animation:'spin 1s linear infinite'}} /> : '📄 freeeで領収書を発行'}
+                  {receiptLoading ? <Loader2 size={14} style={{animation:'spin 1s linear infinite'}} /> : <><IconReceipt size={14} /> freeeで領収書を発行</>}
                 </button>
                 {receiptUrl && (
                   <button className="ctrl-btn" style={{marginTop:8,background:'rgba(0,132,132,0.25)',color:'#00d4d4',borderColor:'rgba(0,212,212,0.3)',width:'100%',justifyContent:'center'}} onClick={() => window.open(receiptUrl,'_blank')}>
-                    🔗 freeeで領収書を確認・送付
+                    <IconLink size={13} /> freeeで領収書を確認・送付
                   </button>
                 )}
               </div>
 
               {paymentMsg && (
                 <div style={{fontSize:12,fontWeight:600,padding:'8px 12px',borderRadius:8,background: paymentMsg.startsWith('✅') ? 'rgba(39,174,96,0.15)' : 'rgba(231,76,60,0.15)', color: paymentMsg.startsWith('✅') ? '#2ecc71' : '#e74c3c'}}>
-                  {paymentMsg}
+                  <PayMsg msg={paymentMsg} />
                 </div>
               )}
             </div>
@@ -930,7 +939,7 @@ function OrderForm({ initial, onSave, onCancel }) {
     e.preventDefault()
     if (!form.name.trim()) {
       await showDialog({
-        icon: '⚠️', title: '入力エラー',
+        icon: <IconWarning size={28} />, title: '入力エラー',
         message: '氏名を入力してください',
         buttons: [{ label: 'OK', value: true, variant: 'primary' }]
       })
@@ -942,7 +951,7 @@ function OrderForm({ initial, onSave, onCancel }) {
   async function handleClose() {
     if (!isDirty) { onCancel(); return }
     const result = await showDialog({
-      icon: '💾', title: '変更を保存しますか？',
+      icon: <IconSave size={28} />, title: '変更を保存しますか？',
       message: '入力内容が保存されていません。\nどうしますか？',
       buttons: [
         { label: '保存して閉じる',      value: 'save',    variant: 'primary' },
@@ -953,7 +962,7 @@ function OrderForm({ initial, onSave, onCancel }) {
     if (result === 'save') {
       if (!form.name.trim()) {
         await showDialog({
-          icon: '⚠️', title: '入力エラー',
+          icon: <IconWarning size={28} />, title: '入力エラー',
           message: '氏名を入力してください',
           buttons: [{ label: 'OK', value: true, variant: 'primary' }]
         })
@@ -977,15 +986,15 @@ function OrderForm({ initial, onSave, onCancel }) {
           <div className="inquiry-toggle full-col">
             <label className="toggle-label">
               <input type="checkbox" name="isInquiry" checked={form.isInquiry || false} onChange={e => { handle(e); if (e.target.checked) setForm(f => ({ ...f, isGuided: false, isSuginami: false })) }} />
-              <span>💬 お問合せセクションとして登録</span>
+              <span><IconChat size={14} /> お問合せセクションとして登録</span>
             </label>
             <label className="toggle-label">
               <input type="checkbox" name="isGuided" checked={form.isGuided || false} onChange={e => { handle(e); if (e.target.checked) setForm(f => ({ ...f, isInquiry: false, isSuginami: false })) }} />
-              <span>📋 案内済みとして登録</span>
+              <span><IconClipboard size={14} /> 案内済みとして登録</span>
             </label>
             <label className="toggle-label">
               <input type="checkbox" name="isSuginami" checked={form.isSuginami || false} onChange={e => { handle(e); if (e.target.checked) setForm(f => ({ ...f, isInquiry: false, isGuided: false })) }} />
-              <span>🏢 杉並本社（受付）として登録</span>
+              <span><IconBuilding size={14} /> 杉並本社（受付）として登録</span>
             </label>
             <p className="toggle-note">チェックなしの場合は受注セクションで処理されます</p>
           </div>
@@ -1009,14 +1018,14 @@ function OrderForm({ initial, onSave, onCancel }) {
           {showKeyNumber && (
             <div className="keynumber-section full-col">
               <label className="keynumber-label">
-                🔑 キーナンバー <span className="req">*</span>
+                <IconKey size={14} /> キーナンバー <span className="req">*</span>
                 <input name="keyNumber" value={form.keyNumber} onChange={handle} placeholder="例: KY-1234" className="keynumber-input" autoComplete="off" />
               </label>
               <p className="keynumber-hint">標準キーの複製に必要なキーナンバーを入力してください</p>
             </div>
           )}
           <div className="price-summary full-col">
-            {isTaxIncluded && <div className="tax-included-notice">💡 シブタニは税込み価格のため消費税計算をスキップします</div>}
+            {isTaxIncluded && <div className="tax-included-notice"><IconLightbulb size={13} /> シブタニは税込み価格のため消費税計算をスキップします</div>}
             <div className="price-row">
               <label className="price-label">
                 {isTaxIncluded ? '税込み合計（直接入力可・@で固定）' : '税抜き合計（直接入力可・@で固定）'}
@@ -1178,7 +1187,7 @@ function SalesTab({ allOrders, salesFrom, salesTo, setSalesFrom, setSalesTo }) {
               </div>
             </div>
           )}
-          <button className="btn-save" style={{marginTop:16,width:'100%'}} onClick={exportExcel}>📥 Excelでエクスポート</button>
+          <button className="btn-save" style={{marginTop:16,width:'100%'}} onClick={exportExcel}><IconDownload size={14} /> Excelでエクスポート</button>
         </>
       )}
     </div>
@@ -1237,7 +1246,7 @@ function UsersTab() {
 
   async function reject(email) {
     const ok = await showDialog({
-      icon: '🗑️', title: 'ユーザーを削除しますか？',
+      icon: <IconTrash size={28} />, title: 'ユーザーを削除しますか？',
       message: email + '\n\nこのユーザーを削除します。この操作は取り消せません。',
       buttons: [
         { label: '削除する', value: true, variant: 'danger' },
@@ -1265,7 +1274,7 @@ function UsersTab() {
       {msg && <div className="settings-save-msg" style={{background: msgType === 'err' ? 'rgba(231,76,60,0.15)' : undefined, color: msgType === 'err' ? '#e74c3c' : undefined}}>{msg}</div>}
 
       {/* 直接追加フォーム */}
-      <div className="settings-title">➕ ユーザーを直接追加</div>
+      <div className="settings-title"><IconPlusAnim size={14} /> ユーザーを直接追加</div>
       <div style={{display:'flex',gap:8,marginBottom:8,flexWrap:'wrap'}}>
         <input
           className="settings-input"
@@ -1298,12 +1307,12 @@ function UsersTab() {
       {/* 生成パスワード表示 */}
       {generatedPass && (
         <div style={{background:'rgba(39,174,96,0.12)',border:'1px solid #27ae60',borderRadius:8,padding:'12px 16px',marginBottom:12}}>
-          <div style={{fontSize:12,color:'#27ae60',marginBottom:4}}>✅ 生成されたパスワード（1度だけ表示）</div>
+          <div style={{fontSize:12,color:'#27ae60',marginBottom:4,display:'flex',alignItems:'center',gap:4}}><IconSuccess size={12} /> 生成されたパスワード（1度だけ表示）</div>
           <div style={{fontFamily:'monospace',fontSize:20,fontWeight:700,letterSpacing:3,color:'#fff'}}>{generatedPass}</div>
           <button
             style={{marginTop:8,fontSize:12,padding:'4px 12px',background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.2)',borderRadius:4,color:'#fff',cursor:'pointer'}}
             onClick={() => { navigator.clipboard?.writeText(generatedPass); showMsg('コピーしました') }}
-          >📋 コピー</button>
+          ><IconDocument size={12} /> コピー</button>
         </div>
       )}
 
@@ -1315,7 +1324,7 @@ function UsersTab() {
       {/* 承認待ち */}
       {pending.length > 0 && (
         <>
-          <div className="settings-title" style={{color:'#e67e22'}}>⏳ 承認待ち ({pending.length}件)</div>
+          <div className="settings-title" style={{color:'#e67e22'}}><IconHourglass size={14} /> 承認待ち ({pending.length}件)</div>
           <div className="deleted-list">
             {pending.map(u => (
               <div key={u.email} className="deleted-row">
@@ -1338,7 +1347,7 @@ function UsersTab() {
       {/* 承認済み */}
       {approved.length > 0 && (
         <>
-          <div className="settings-title" style={{marginTop:16}}>✅ 承認済みユーザー ({approved.length}人)</div>
+          <div className="settings-title" style={{marginTop:16}}><IconSuccess size={14} /> 承認済みユーザー ({approved.length}人)</div>
           <div className="deleted-list">
             {approved.map(u => (
               <div key={u.email} className="deleted-row">
@@ -1388,14 +1397,14 @@ function SettingsModal({ role, onClose, onLogout, deletedOrders, onRestore, allO
 
   function saveGasUrl() {
     try { localStorage.setItem(GAS_CONFIG_KEY, gasUrl) } catch {}
-    showMsg('✅ GAS URLを保存しました')
+    showMsg('GAS URLを保存しました')
   }
 
   const tabs = [
-    role === 'master'     && { id: 'gas',     label: '⚙️ GAS設定' },
-    can(role, 'users')    && { id: 'users',   label: '👥 ユーザー' },
-    can(role, 'sales')    && { id: 'sales',   label: '📊 売上' },
-    can(role, 'restore')  && { id: 'deleted', label: `🗑️ 削除済み${deletedOrders.length > 0 ? ` (${deletedOrders.length})` : ''}` },
+    role === 'master'     && { id: 'gas',     label: <><IconGearSettings size={13}/> GAS設定</> },
+    can(role, 'users')    && { id: 'users',   label: <><IconUsers size={13}/> ユーザー</> },
+    can(role, 'sales')    && { id: 'sales',   label: <><IconChart size={13}/> 売上</> },
+    can(role, 'restore')  && { id: 'deleted', label: <><IconTrash size={13}/> {`削除済み${deletedOrders.length > 0 ? ` (${deletedOrders.length})` : ''}`}</> },
   ].filter(Boolean)
 
   return (
@@ -1438,7 +1447,7 @@ function SettingsModal({ role, onClose, onLogout, deletedOrders, onRestore, allO
               {testStatus === 'success' && <p style={{color:'#27ae60',fontSize:13,marginTop:8}}>✓ Worker接続成功</p>}
               {testStatus === 'error'   && <p style={{color:'#e74c3c',fontSize:13,marginTop:8}}>✗ 接続失敗</p>}
               <div style={{marginTop:16,padding:'12px',background:'rgba(255,165,0,0.08)',borderRadius:6,fontSize:12,color:'var(--text-dim)'}}>
-                ℹ️ APIキー・DropboxトークンはCloudflare環境変数で管理。パスワード・ソルトはGASスクリプトプロパティで管理。
+                <IconInfo size={13} /> APIキー・DropboxトークンはCloudflare環境変数で管理。パスワード・ソルトはGASスクリプトプロパティで管理。
               </div>
 
               {/* freee認証 */}
@@ -1450,7 +1459,7 @@ function SettingsModal({ role, onClose, onLogout, deletedOrders, onRestore, allO
                   style={{width:'100%', background:'rgba(0,132,132,0.8)', marginTop:8}}
                   onClick={() => window.open(WORKER_URL + '/freee/auth', '_blank')}
                 >
-                  🔗 freeeと連携する
+                  <IconLink size={13} /> freeeと連携する
                 </button>
               </div>
             </div>
@@ -1810,7 +1819,7 @@ export default function App() {
                 const s = STATUSES.find(st => st.id === id)
                 return (
                   <button key={id} onClick={() => toggleStatus(id)} className={`stat-group-btn${activeStatus === id ? ' active' : ''}`} style={{'--c': s.color}}>
-                    <span className="stat-icon">{s.icon}</span>
+                    <span className="stat-icon">{getStatusIcon(s.id)}</span>
                     <div className="stat-num">{counts[id]}</div>
                     <div className="stat-label">{s.label}</div>
                   </button>
@@ -1828,7 +1837,7 @@ export default function App() {
                 const s = STATUSES.find(st => st.id === id)
                 return (
                   <button key={id} onClick={() => toggleStatus(id)} className={`stat-group-btn${activeStatus === id ? ' active' : ''}`} style={{'--c': s.color}}>
-                    <span className="stat-icon">{s.icon}</span>
+                    <span className="stat-icon">{getStatusIcon(s.id)}</span>
                     <div className="stat-num">{counts[id]}</div>
                     <div className="stat-label">{s.label}</div>
                   </button>
@@ -1860,7 +1869,7 @@ export default function App() {
           <div className="sync-bar-v3">
             <span>
               {syncError
-                ? <span className="sync-err">⚠ {syncError} — <button onClick={pullFromGAS} style={{background:'none',border:'none',color:'#fca5a5',cursor:'pointer',textDecoration:'underline',padding:0,fontSize:'inherit'}}>再試行</button></span>
+                ? <span className="sync-err"><IconWarning size={12} /> {syncError} — <button onClick={pullFromGAS} style={{background:'none',border:'none',color:'#fca5a5',cursor:'pointer',textDecoration:'underline',padding:0,fontSize:'inherit'}}>再試行</button></span>
                 : lastSync
                   ? <><span className="sync-dot" /> 最終同期: {formatDate(lastSync.toISOString())}</>
                   : <span style={{color:'var(--warn)'}}>● 未同期 — <button onClick={pullFromGAS} style={{background:'none',border:'none',color:'var(--warn)',cursor:'pointer',textDecoration:'underline',padding:0,fontSize:'inherit'}}>今すぐ同期</button></span>
@@ -1872,7 +1881,7 @@ export default function App() {
           <div className="order-list-v3">
             {filtered.length === 0 && (
               <div className="empty-state-v3">
-                <div className="empty-icon-v3">🔑</div>
+                <div className="empty-icon-v3"><IconKey size={60} large /></div>
                 <p>データがありません</p>
                 {!activeStatus && !activeAlert && can(role, 'add') && (
                   <button className="btn-primary" style={{marginTop:16}} onClick={() => setShowForm(true)}><Plus size={14}/> 最初の受注を登録</button>

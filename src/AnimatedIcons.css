@@ -1,0 +1,331 @@
+/* ============================================================
+   AnimatedIcons.css — SVGアニメーションアイコン定義
+   ============================================================ */
+
+.ai-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+/* ── チャットバブル (💬 お問合せ) ──────────────────────── */
+.ai-bubble { animation: ai-bubble-pop 2.4s ease-in-out infinite; transform-origin: 50% 90%; }
+.ai-dot   { animation: ai-dot-bounce 1.6s ease-in-out infinite; }
+.ai-dot-1 { animation-delay: 0s;    }
+.ai-dot-2 { animation-delay: 0.22s; }
+.ai-dot-3 { animation-delay: 0.44s; }
+
+@keyframes ai-bubble-pop {
+  0%, 100% { transform: scale(1); }
+  45%       { transform: scale(1.1) translateY(-1px); }
+}
+@keyframes ai-dot-bounce {
+  0%, 100% { transform: translateY(0); opacity: .6; }
+  50%       { transform: translateY(-2.5px); opacity: 1; }
+}
+
+/* ── クリップボード (📋 案内済み) ──────────────────────── */
+.ai-clip-body { animation: ai-clip-bob 3s ease-in-out infinite; }
+.ai-clip-line { stroke-dasharray: 10; stroke-dashoffset: 10; animation: ai-line-draw 2s ease-in-out infinite; }
+.ai-clip-l1   { animation-delay: 0s;   }
+.ai-clip-l2   { animation-delay: .25s; }
+.ai-clip-l3   { animation-delay: .5s;  }
+
+@keyframes ai-clip-bob  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-1.5px)} }
+@keyframes ai-line-draw {
+  0%,100% { stroke-dashoffset: 10; opacity: .3; }
+  50%,70% { stroke-dashoffset: 0;  opacity: 1;  }
+}
+
+/* ── ビル (🏢 杉並電話受付) ──────────────────────────── */
+.ai-win   { animation: ai-win-blink 3.6s ease-in-out infinite; }
+.ai-win-a { animation-delay: 0s;   }
+.ai-win-b { animation-delay: .4s;  }
+.ai-win-c { animation-delay: .8s;  }
+.ai-win-d { animation-delay: .2s;  }
+.ai-win-e { animation-delay: .6s;  }
+.ai-win-f { animation-delay: 1s;   }
+
+@keyframes ai-win-blink {
+  0%,60%,100% { opacity: .9; }
+  70%,90%     { opacity: .1; }
+}
+
+/* ── インボックス矢印 (📥 受注) ───────────────────────── */
+.ai-arr { animation: ai-arr-bounce 1.5s ease-in-out infinite; transform-origin: center; }
+
+@keyframes ai-arr-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(3px); }
+}
+
+/* ── ギア (🏭 手配済み) ───────────────────────────────── */
+.ai-gear { animation: ai-gear-spin 2s linear infinite; transform-origin: 50% 50%; }
+
+@keyframes ai-gear-spin { to { transform: rotate(360deg); } }
+
+/* ── 段ボール蓋 (📦 入荷済み) ────────────────────────── */
+.ai-lid { animation: ai-lid-bounce 2.2s ease-in-out infinite; transform-origin: center; }
+
+@keyframes ai-lid-bounce {
+  0%,100% { transform: translateY(0);    }
+  35%      { transform: translateY(-4px); }
+  60%      { transform: translateY(0);    }
+}
+
+/* ── カレンダーチェック (📅 作業アポ済み) ─────────────── */
+.ai-cal-check {
+  stroke-dasharray: 22;
+  stroke-dashoffset: 22;
+  animation: ai-cal-draw 2s ease-in-out infinite;
+}
+
+@keyframes ai-cal-draw {
+  0%,100% { stroke-dashoffset: 22; opacity: 0;  }
+  40%,70% { stroke-dashoffset: 0;  opacity: 1;  }
+}
+
+/* ── チェックマーク (✅ 完了) ───────────────────────── */
+.ai-chk-ring  { animation: ai-chk-pop  2s ease-in-out infinite; transform-origin: center; }
+.ai-chk-path  {
+  stroke-dasharray: 22;
+  stroke-dashoffset: 22;
+  animation: ai-chk-draw 1.8s ease-in-out infinite;
+}
+
+@keyframes ai-chk-pop  { 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
+@keyframes ai-chk-draw {
+  0%,100% { stroke-dashoffset: 22; opacity: 0; }
+  35%,70% { stroke-dashoffset: 0;  opacity: 1; }
+}
+
+/* ── Xマーク (❌ キャンセル) ───────────────────────── */
+.ai-x-ring  { animation: ai-x-pulse 2s ease-in-out infinite; transform-origin: center; }
+.ai-x-lines { animation: ai-x-shake 2.5s ease-in-out infinite; transform-origin: center; }
+
+@keyframes ai-x-pulse { 0%,100%{transform:scale(1);opacity:.8} 50%{transform:scale(1.06);opacity:1} }
+@keyframes ai-x-shake {
+  0%,60%,100% { transform: rotate(0); }
+  65%          { transform: rotate(8deg); }
+  70%          { transform: rotate(-8deg); }
+  75%          { transform: rotate(4deg); }
+  80%          { transform: rotate(0); }
+}
+
+/* ── 鍵 (🔑) ────────────────────────────────────────── */
+.ai-key-g    { animation: ai-key-wobble 2.8s ease-in-out infinite; transform-origin: 8px 8px; }
+.ai-key-lg   { filter: drop-shadow(0 0 10px currentColor); animation: ai-key-wobble 3s ease-in-out infinite; transform-origin: 12px 12px; }
+
+@keyframes ai-key-wobble {
+  0%,100% { transform: rotate(0deg);  }
+  20%      { transform: rotate(-9deg); }
+  40%      { transform: rotate(9deg);  }
+  60%      { transform: rotate(-4deg); }
+  80%      { transform: rotate(4deg);  }
+}
+
+/* ── タグ (🏷️) ──────────────────────────────────────── */
+.ai-tag-g { animation: ai-tag-swing 2s ease-in-out infinite; transform-origin: 20px 2px; }
+
+@keyframes ai-tag-swing {
+  0%,100% { transform: rotate(0); }
+  30%      { transform: rotate(8deg); }
+  70%      { transform: rotate(-8deg); }
+}
+
+/* ── カード (💳) ────────────────────────────────────── */
+.ai-card-g { animation: ai-card-slide 2.5s ease-in-out infinite; }
+
+@keyframes ai-card-slide {
+  0%,100% { transform: translateX(0); }
+  35%      { transform: translateX(3px); }
+  65%      { transform: translateX(-3px); }
+}
+
+/* ── レンチ (🔧) ────────────────────────────────────── */
+.ai-wrench-g { animation: ai-wrench-rot 2.2s ease-in-out infinite; transform-origin: center; }
+
+@keyframes ai-wrench-rot {
+  0%,100% { transform: rotate(0);    }
+  30%      { transform: rotate(-22deg); }
+  60%      { transform: rotate(22deg);  }
+  80%      { transform: rotate(-10deg); }
+}
+
+/* ── ロック (🔐🔒) ─────────────────────────────────── */
+.ai-shackle { animation: ai-shackle-bounce 2.2s ease-in-out infinite; transform-origin: 12px 13px; }
+
+@keyframes ai-shackle-bounce {
+  0%,100% { transform: translateY(0);    }
+  40%      { transform: translateY(-3px); }
+  70%      { transform: translateY(0);    }
+}
+
+/* ── リロード (🔄) ─────────────────────────────────── */
+.ai-reload-g { animation: ai-reload-spin 1.2s linear infinite; transform-origin: center; }
+
+@keyframes ai-reload-spin { to { transform: rotate(360deg); } }
+
+/* ── 鉛筆 (✏️) ─────────────────────────────────────── */
+.ai-pencil-g { animation: ai-pencil-write 2s ease-in-out infinite; transform-origin: 18px 18px; }
+
+@keyframes ai-pencil-write {
+  0%,100% { transform: rotate(0) translate(0,0);     }
+  20%      { transform: rotate(-5deg) translate(-1px,1px); }
+  40%      { transform: rotate(0) translate(1px,-1px);    }
+  60%      { transform: rotate(5deg) translate(-1px,0);   }
+}
+
+/* ── ゴミ箱 (🗑️) ────────────────────────────────────── */
+.ai-trash-g { animation: ai-trash-shake 2.5s ease-in-out infinite; transform-origin: center bottom; }
+
+@keyframes ai-trash-shake {
+  0%,70%,100% { transform: rotate(0); }
+  75%          { transform: rotate(-7deg); }
+  80%          { transform: rotate(7deg);  }
+  85%          { transform: rotate(-3deg); }
+  90%          { transform: rotate(0);     }
+}
+
+/* ── 警告 (⚠️) ────────────────────────────────────── */
+.ai-warn-g { animation: ai-warn-pulse 1.6s ease-in-out infinite; transform-origin: center; }
+
+@keyframes ai-warn-pulse {
+  0%,100% { transform: scale(1);    opacity: .8; }
+  50%      { transform: scale(1.1); opacity: 1;  }
+}
+
+/* ── ドクロ (☠️) ─────────────────────────────────────── */
+.ai-skull-g { animation: ai-skull-shake 2.8s ease-in-out infinite; transform-origin: center; }
+
+@keyframes ai-skull-shake {
+  0%,50%,100% { transform: rotate(0) scale(1);     }
+  55%          { transform: rotate(-9deg) scale(1.05); }
+  60%          { transform: rotate(9deg) scale(1.05);  }
+  65%          { transform: rotate(-5deg) scale(1.02); }
+  70%          { transform: rotate(5deg) scale(1.02);  }
+  75%          { transform: rotate(0) scale(1);        }
+}
+
+/* ── 保存 (💾) ────────────────────────────────────── */
+.ai-save-g { animation: ai-save-flash 2s ease-in-out infinite; transform-origin: center; }
+
+@keyframes ai-save-flash {
+  0%,100% { opacity: .8; filter: none; }
+  50%      { opacity: 1;  filter: drop-shadow(0 0 4px currentColor); }
+}
+
+/* ── リンク (🔗) ─────────────────────────────────────── */
+.ai-link-g { animation: ai-link-shake 2s ease-in-out infinite; transform-origin: center; }
+
+@keyframes ai-link-shake {
+  0%,100% { transform: rotate(0);     }
+  25%      { transform: rotate(-10deg); }
+  50%      { transform: rotate(10deg);  }
+  75%      { transform: rotate(-5deg);  }
+}
+
+/* ── スマホ (📱) ─────────────────────────────────────── */
+.ai-phone-g { animation: ai-phone-vibe 2s ease-in-out infinite; transform-origin: center; }
+
+@keyframes ai-phone-vibe {
+  0%,80%,100% { transform: rotate(0); }
+  83%          { transform: rotate(-7deg); }
+  86%          { transform: rotate(7deg);  }
+  89%          { transform: rotate(-4deg); }
+  92%          { transform: rotate(0);     }
+}
+
+/* ── ダウンロード (📥) ───────────────────────────────── */
+.ai-dl-g { animation: ai-dl-bounce 1.5s ease-in-out infinite; transform-origin: center; }
+
+@keyframes ai-dl-bounce {
+  0%,100% { transform: translateY(0);   }
+  50%      { transform: translateY(2px); }
+}
+
+/* ── 送信 (📧) ───────────────────────────────────────── */
+.ai-send-g { animation: ai-send-fly 2s ease-in-out infinite; transform-origin: center; }
+
+@keyframes ai-send-fly {
+  0%,100% { transform: translate(0,0);         opacity: 1;  }
+  40%      { transform: translate(3px,-3px);   opacity: .8; }
+  60%      { transform: translate(0,0);         opacity: 1;  }
+}
+
+/* ── ギア設定 (⚙️) ───────────────────────────────────── */
+.ai-gear-slow { animation: ai-gear-slow-spin 6s linear infinite; transform-origin: 50% 50%; }
+
+@keyframes ai-gear-slow-spin { to { transform: rotate(360deg); } }
+
+/* ── グラフバー (📊) ──────────────────────────────────── */
+.ai-bar   { transform-origin: 50% 100%; }
+.ai-bar-1 { animation: ai-bar-grow 2s ease-in-out infinite; animation-delay: 0s;   }
+.ai-bar-2 { animation: ai-bar-grow 2s ease-in-out infinite; animation-delay: .15s; }
+.ai-bar-3 { animation: ai-bar-grow 2s ease-in-out infinite; animation-delay: .3s;  }
+
+@keyframes ai-bar-grow {
+  0%,100% { transform: scaleY(1);    }
+  50%      { transform: scaleY(1.12); }
+}
+
+/* ── プラス (➕) ─────────────────────────────────────── */
+.ai-plus-g { animation: ai-plus-pop 2s ease-in-out infinite; transform-origin: center; }
+
+@keyframes ai-plus-pop {
+  0%,100% { transform: scale(1) rotate(0);    }
+  50%      { transform: scale(1.12) rotate(90deg); }
+}
+
+/* ── 砂時計 (⏳) ─────────────────────────────────────── */
+.ai-hourglass-g { animation: ai-hourglass-turn 3.5s ease-in-out infinite; transform-origin: center; }
+
+@keyframes ai-hourglass-turn {
+  0%,35%,100% { transform: rotate(0);    }
+  50%,85%     { transform: rotate(180deg); }
+}
+
+/* ── 情報 (ℹ️) ──────────────────────────────────────── */
+.ai-info-g { animation: ai-info-pulse 2.2s ease-in-out infinite; transform-origin: center; }
+
+@keyframes ai-info-pulse {
+  0%,100% { transform: scale(1);    opacity: .7; }
+  50%      { transform: scale(1.06); opacity: .9; }
+}
+
+/* ── 電球 (💡) ──────────────────────────────────────── */
+.ai-bulb-g { animation: ai-bulb-glow 2s ease-in-out infinite; transform-origin: center; }
+
+@keyframes ai-bulb-glow {
+  0%,100% { filter: none;                        opacity: .85; }
+  50%      { filter: drop-shadow(0 0 5px #ffd700); opacity: 1;   }
+}
+
+/* ── 領収書 (🧾) ────────────────────────────────────── */
+.ai-receipt-g { animation: ai-receipt-scroll 2.5s ease-in-out infinite; transform-origin: center; }
+
+@keyframes ai-receipt-scroll {
+  0%,100% { transform: translateY(0);    }
+  40%      { transform: translateY(-2px); }
+  70%      { transform: translateY(0);    }
+}
+
+/* ── メール封筒 (✉️) ─────────────────────────────────── */
+.ai-mail-body { animation: ai-mail-bob  2.5s ease-in-out infinite; }
+.ai-mail-flap { animation: ai-mail-flap 2.5s ease-in-out infinite; transform-origin: 50% 30%; }
+
+@keyframes ai-mail-bob  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-1.5px)} }
+@keyframes ai-mail-flap {
+  0%,100% { transform: scaleY(1); }
+  30%      { transform: scaleY(.65) translateY(-2px); }
+  60%      { transform: scaleY(1); }
+}
+
+/* ── stat-icon SVG対応 ──────────────────────────────── */
+.stat-icon .ai-icon,
+.stat-group-btn .ai-icon {
+  display: block;
+  margin: 0 auto 6px;
+}
