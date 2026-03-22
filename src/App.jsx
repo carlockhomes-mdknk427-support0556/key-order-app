@@ -496,7 +496,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
   // freee領収書直接発行
   async function issueFreeeReceipt() {
     const ok = await showDialog({
-      icon: <IconReceipt size={28} />, title: 'freee 領収書発行',
+      icon: <span style={{color:'#06b6d4'}}><IconReceipt size={28} /></span>, title: 'freee 領収書発行',
       message: '金額：¥' + Number(order.amount).toLocaleString() + '（税込）\n\nfreeeで領収書を発行しますか？',
       buttons: [
         { label: '発行する', value: true, variant: 'primary' },
@@ -539,7 +539,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
   async function sendPaymentMail() {
     if (!hasEmail) return
     const ok = await showDialog({
-      icon: <IconMail size={28} />, title: '決済案内メールを送信',
+      icon: <span style={{color:'#60a5fa'}}><IconMail size={28} /></span>, title: '決済案内メールを送信',
       message: '宛先: ' + customerEmail + '\n\nこの宛先にメールを送信しますか？',
       buttons: [
         { label: '送信する', value: true, variant: 'primary' },
@@ -725,7 +725,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
                 {order.status !== 'cancelled' && (
                   <button className="ctrl-btn-v3 cancel-btn" onClick={async () => {
                     const ok = await showDialog({
-                      icon: <IconWarning size={28} />, title: 'キャンセルにしますか？',
+                      icon: <span style={{color:'#f59e0b'}}><IconWarning size={28} /></span>, title: 'キャンセルにしますか？',
                       message: order.name + ' 様の受注をキャンセルステータスに変更します。',
                       buttons: [
                         { label: 'キャンセルにする', value: true, variant: 'danger' },
@@ -737,7 +737,7 @@ function OrderCard({ order, onStatusChange, onDelete, onEdit, onCancel, canDelet
                 )}
                 {canDelete && <button className="ctrl-btn-v3 del-btn" onClick={async () => {
                   const ok = await showDialog({
-                    icon: <IconTrash size={28} />, title: 'この受注を削除しますか？',
+                    icon: <span style={{color:'#ef4444'}}><IconTrash size={28} /></span>, title: 'この受注を削除しますか？',
                     message: order.name + ' 様の受注を削除します。\n「設定 > 削除済み」から復元できます。',
                     buttons: [
                       { label: '削除する', value: true, variant: 'danger' },
@@ -939,7 +939,7 @@ function OrderForm({ initial, onSave, onCancel }) {
     e.preventDefault()
     if (!form.name.trim()) {
       await showDialog({
-        icon: <IconWarning size={28} />, title: '入力エラー',
+        icon: <span style={{color:'#f59e0b'}}><IconWarning size={28} /></span>, title: '入力エラー',
         message: '氏名を入力してください',
         buttons: [{ label: 'OK', value: true, variant: 'primary' }]
       })
@@ -951,7 +951,7 @@ function OrderForm({ initial, onSave, onCancel }) {
   async function handleClose() {
     if (!isDirty) { onCancel(); return }
     const result = await showDialog({
-      icon: <IconSave size={28} />, title: '変更を保存しますか？',
+      icon: <span style={{color:'#10b981'}}><IconSave size={28} /></span>, title: '変更を保存しますか？',
       message: '入力内容が保存されていません。\nどうしますか？',
       buttons: [
         { label: '保存して閉じる',      value: 'save',    variant: 'primary' },
@@ -962,7 +962,7 @@ function OrderForm({ initial, onSave, onCancel }) {
     if (result === 'save') {
       if (!form.name.trim()) {
         await showDialog({
-          icon: <IconWarning size={28} />, title: '入力エラー',
+          icon: <span style={{color:'#f59e0b'}}><IconWarning size={28} /></span>, title: '入力エラー',
           message: '氏名を入力してください',
           buttons: [{ label: 'OK', value: true, variant: 'primary' }]
         })
@@ -986,15 +986,15 @@ function OrderForm({ initial, onSave, onCancel }) {
           <div className="inquiry-toggle full-col">
             <label className="toggle-label">
               <input type="checkbox" name="isInquiry" checked={form.isInquiry || false} onChange={e => { handle(e); if (e.target.checked) setForm(f => ({ ...f, isGuided: false, isSuginami: false })) }} />
-              <span><IconChat size={14} /> お問合せセクションとして登録</span>
+              <span><span style={{color:'#ff7c1a'}}><IconChat size={14} /></span> お問合せセクションとして登録</span>
             </label>
             <label className="toggle-label">
               <input type="checkbox" name="isGuided" checked={form.isGuided || false} onChange={e => { handle(e); if (e.target.checked) setForm(f => ({ ...f, isInquiry: false, isSuginami: false })) }} />
-              <span><IconClipboard size={14} /> 案内済みとして登録</span>
+              <span><span style={{color:'#ffd000'}}><IconClipboard size={14} /></span> 案内済みとして登録</span>
             </label>
             <label className="toggle-label">
               <input type="checkbox" name="isSuginami" checked={form.isSuginami || false} onChange={e => { handle(e); if (e.target.checked) setForm(f => ({ ...f, isInquiry: false, isGuided: false })) }} />
-              <span><IconBuilding size={14} /> 杉並本社（受付）として登録</span>
+              <span><span style={{color:'#00f0c8'}}><IconBuilding size={14} /></span> 杉並本社（受付）として登録</span>
             </label>
             <p className="toggle-note">チェックなしの場合は受注セクションで処理されます</p>
           </div>
@@ -1018,7 +1018,7 @@ function OrderForm({ initial, onSave, onCancel }) {
           {showKeyNumber && (
             <div className="keynumber-section full-col">
               <label className="keynumber-label">
-                <IconKey size={14} /> キーナンバー <span className="req">*</span>
+                <span style={{color:'var(--accent)'}}><IconKey size={14} /></span> キーナンバー <span className="req">*</span>
                 <input name="keyNumber" value={form.keyNumber} onChange={handle} placeholder="例: KY-1234" className="keynumber-input" autoComplete="off" />
               </label>
               <p className="keynumber-hint">標準キーの複製に必要なキーナンバーを入力してください</p>
@@ -1246,7 +1246,7 @@ function UsersTab() {
 
   async function reject(email) {
     const ok = await showDialog({
-      icon: <IconTrash size={28} />, title: 'ユーザーを削除しますか？',
+      icon: <span style={{color:'#ef4444'}}><IconTrash size={28} /></span>, title: 'ユーザーを削除しますか？',
       message: email + '\n\nこのユーザーを削除します。この操作は取り消せません。',
       buttons: [
         { label: '削除する', value: true, variant: 'danger' },

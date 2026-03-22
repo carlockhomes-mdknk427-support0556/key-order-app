@@ -280,7 +280,7 @@ body {
 .stat-card.active { background: rgba(240,165,0,0.05); border-color: rgba(240,165,0,0.2); }
 .stat-card.active::before { opacity: 1; }
 
-.stat-icon { font-size: 20px; display: block; margin-bottom: 8px; }
+.stat-icon { font-size: 20px; display: block; margin-bottom: 8px; color: var(--c, var(--accent)); }
 .stat-num {
   font-family: var(--font-mincho);
   font-size: 36px;
@@ -332,7 +332,7 @@ body {
 .stat-group-btn:hover::before { opacity: 0.9; }
 .stat-group-btn.active { background: rgba(240,165,0,0.05); }
 .stat-group-btn.active::before { opacity: 1; }
-.stat-group-btn .stat-icon { font-size: 16px; display: block; margin-bottom: 4px; }
+.stat-group-btn .stat-icon { font-size: 16px; display: block; margin-bottom: 4px; color: var(--c, var(--accent)); }
 .stat-group-btn .stat-num {
   font-family: var(--font-mincho);
   font-size: 30px;
@@ -478,6 +478,9 @@ body {
   padding: 5px 16px;
   font-size: 11px;
   color: #90caf9;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* カードヘッダー */
@@ -852,7 +855,7 @@ body {
    Empty state
    ============================================================ */
 .empty-state-v3 { text-align: center; padding: 52px 0; color: var(--text3); }
-.empty-icon-v3 { font-size: 36px; margin-bottom: 12px; opacity: 0.2; }
+.empty-icon-v3 { font-size: 36px; margin-bottom: 12px; opacity: 0.55; color: var(--accent); }
 
 /* ============================================================
    ログイン画面
@@ -1040,7 +1043,9 @@ body {
 .dialog-icon {
   font-size: 32px;
   margin-bottom: 12px;
-  display: block;
+  display: flex;
+  justify-content: center;
+  color: var(--text1);
 }
 .dialog-title {
   font-size: 18px;
